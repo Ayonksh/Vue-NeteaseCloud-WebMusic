@@ -1,0 +1,61 @@
+// fade
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// playlist
+.playlist-enter-active {
+  transition: all 0.3s ease;
+}
+.playlist-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.playlist-enter,
+.playlist-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+// song-detail-page
+.song-detail-page-enter-active,
+.song-detail-page-leave-active {
+  transition: all 0.3s ease-out;
+}
+.song-detail-page-enter,
+.song-detail-page-leave-to {
+  transform: translate(-80%, 100%);
+  opacity: 0;
+}
+
+// ay-dialog
+.dialog-enter-active,
+.dialog-leave-active {
+  transition: 0.3s;
+}
+.dialog-enter,
+.dialog-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+// ay-notification
+.ay-notification-fade-enter {
+  &.right {
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  &.left {
+    left: 0;
+    transform: translateX(-100%);
+  }
+}
+
+.ay-notification-fade-leave-active {
+  opacity: 0;
+}
