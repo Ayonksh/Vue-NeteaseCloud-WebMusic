@@ -1,9 +1,7 @@
 <template>
-  <ay-popover trigger="click" placement="bottom-end" :wrapStyle="popoverStyle">
-    <div class="theme">
-      <div class="img-wrap">
-        <img :src="require('@/assets/head/skin.png')" />
-      </div>
+  <ay-popover class="theme" trigger="click" placement="bottom-end">
+    <div class="img-wrap">
+      <img :src="require('@/assets/head/skin.png')" />
     </div>
     <template slot="content">
       <ul class="list">
@@ -22,9 +20,6 @@ export default {
   name: "Theme",
   data() {
     return {
-      popoverStyle: {
-        margin: "0",
-      },
       themeConfig,
     };
   },
@@ -34,12 +29,13 @@ export default {
 
 <style lang="scss" scoped>
 .theme {
-  height: $header-height;
+  height: 100%;
   display: flex;
   align-items: center;
   .img-wrap {
     display: flex;
     align-items: center;
+    cursor: pointer;
     img {
       width: 24px;
       height: 24px;

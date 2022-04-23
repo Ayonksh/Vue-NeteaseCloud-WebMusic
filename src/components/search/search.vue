@@ -1,8 +1,8 @@
 <template>
   <ay-popover
-    class="popover"
+    class="search"
     :show="show"
-    :wrapStyle="{ width: '360px', margin: '0' }"
+    :wrapStyle="{ width: '360px' }"
     trigger="manual"
     placement="bottom"
   >
@@ -172,7 +172,7 @@
                       class="icon"
                       :class="item.iconType == 5 ? 'icon__type5' : ''"
                       v-if="item.iconUrl"
-                      :src="`${item.iconUrl}`"
+                      :src="item.iconUrl"
                     />
                     <span class="score">{{ item.score }}</span>
                   </div>
@@ -320,7 +320,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.popover {
+.search {
+  height: 100%;
+  display: flex;
+  align-items: center;
   .input {
     .img-wrap {
       height: 100%;

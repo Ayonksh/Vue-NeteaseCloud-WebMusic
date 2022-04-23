@@ -1,6 +1,8 @@
 import {
   loginByPhone,
   loginByEmail,
+  verifyCaptcha,
+  getLoginStatus,
   getUserInfo,
   getUserPlaylist,
   logout,
@@ -63,7 +65,7 @@ export function formatSong(song) {
   };
 }
 
-export async function userLogin(account, password) {
+export async function accountLogin(account, password) {
   const request = {
     email: emailLogin,
     phone: phoneLogin,
@@ -94,6 +96,39 @@ export async function phoneLogin(account, password) {
       password,
     });
     loginSuccess(profile.userId, token, cookie);
+  } catch (e) {
+    loginError();
+    Promise.reject(e);
+  }
+}
+
+// 验证码登录
+export async function captchaLogin(phone, captcha, ctcode) {
+  try {
+    const { cookie, profile, token } = await verifyCaptcha({
+      phone: phone,
+      captcha: captcha,
+      ctcode: ctcode,
+    });
+    loginSuccess(profile.userId, token, cookie);
+  } catch (e) {
+    loginError();
+    Promise.reject(e);
+  }
+}
+
+export async function qrcodeLogin(cookie) {
+  try {
+    const { data } = await getLoginStatus({
+      cookie: cookie,
+    });
+    AyNotification({
+      duration: 4000,
+      title: "登录成功",
+    });
+    document.cookie = cookie;
+    localStorage.setItem("userId", data.profile.userId);
+    await initUserInfo(data.profile.userId);
   } catch (e) {
     loginError();
     Promise.reject(e);

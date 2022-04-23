@@ -1,15 +1,16 @@
 <template>
   <ay-popover
+    class="user"
     :wrapStyle="popoverStyle"
     trigger="hover"
     placement="bottom"
     :closeDelay="200"
   >
-    <div class="user">
+    <div class="logined">
       <div class="img-wrap">
         <img v-lazy="getImgUrl(userAvatarUrl, 140, 100)" />
       </div>
-      <div class="name">{{ userNickname }}</div>
+      <span class="name">{{ userNickname }}</span>
     </div>
     <template slot="content">
       <div class="detail-wrap">
@@ -71,7 +72,6 @@ export default {
     return {
       popoverStyle: {
         width: "250px",
-        margin: "0",
       },
       ulData: [
         [
@@ -90,8 +90,8 @@ export default {
   methods: {
     getImgUrl,
     async signin() {
-      let time = new Date().getTime();
-      let result = await dailySignin({ timestamp: time });
+      let timestamp = new Date().getTime();
+      let result = await dailySignin({ timestamp: timestamp });
       if (result.code === 200) {
         this.setMobileSign(true);
       }
@@ -105,24 +105,24 @@ export default {
 
 <style lang="scss" scoped>
 .user {
-  height: $header-height;
-  padding: 0 8px;
-  display: flex;
-  align-items: center;
-  transition: 0.3s;
-  .img-wrap {
-    margin-right: 8px;
+  .logined {
     display: flex;
     align-items: center;
-    img {
-      @include circle(30px);
+    transition: 0.3s;
+    .img-wrap {
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+      img {
+        @include circle(30px);
+      }
     }
-  }
-  .name {
-    font-size: $font-size-sm;
-    opacity: 0.7;
-    &:hover {
-      opacity: 1;
+    .name {
+      font-size: $font-size-sm;
+      opacity: 0.7;
+      &:hover {
+        opacity: 1;
+      }
     }
   }
 }

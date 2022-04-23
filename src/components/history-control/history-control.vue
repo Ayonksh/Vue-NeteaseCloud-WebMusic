@@ -1,9 +1,9 @@
 <template>
   <div class="history-control">
-    <div class="item" @click="back">
+    <div class="img-wrap" @click="back">
       <img :src="require('@/assets/head/arrow-left-bold.png')" />
     </div>
-    <div class="item" @click="forward">
+    <div class="img-wrap" @click="forward">
       <img :src="require('@/assets/head/arrow-right-bold.png')" />
     </div>
   </div>
@@ -28,7 +28,7 @@ export default {
   height: 100%;
   display: flex;
   align-items: center;
-  .item {
+  .img-wrap {
     margin: 0 5px;
     @include circle(24px);
     background-color: $grey-light;

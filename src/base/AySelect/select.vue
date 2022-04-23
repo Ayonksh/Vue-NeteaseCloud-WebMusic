@@ -14,7 +14,7 @@
         <input
           ref="input"
           :style="inputStyle"
-          :value="selectedValue"
+          :value="selected"
           :placeholder="
             checkedIdx !== null
               ? list[checkedIdx] && list[checkedIdx][labelName]
@@ -92,12 +92,19 @@
 </template>
 
 <script>
-const MD_INPUT_MIN_HEIGHT = 36;
-const INPUT_PADDINT_TOP = 2;
+const SM_MIN_INPUT_HEIGHT = 32;
+const MD_MIN_INPUT_HEIGHT = 36;
+const LG_MIN_INPUT_HEIGHT = 40;
+const INPUT_PADDING_TOP = 2;
+const INPUT_PADDING_BOTTOM = 2;
 import AyPopover from "../AyPopover/popover.vue";
 export default {
   name: "AySelect",
   components: { AyPopover },
+  model: {
+    prop: "selected",
+    event: "selectedChange",
+  },
   props: {
     popoverWidth: {
       type: String,
@@ -106,9 +113,14 @@ export default {
       type: String,
       default: "bottom",
     },
+    size: {
+      type: String,
+      validator: (type) => ["sm", "md", "lg"].indexOf(type) > -1,
+      default: "md",
+    },
     width: {
       type: String,
-      default: "100px",
+      default: "80px",
     },
     // item 名称
     labelName: {
@@ -149,7 +161,7 @@ export default {
       show: false,
       focused: false,
       hovering: false,
-      height: MD_INPUT_MIN_HEIGHT,
+      height: MD_MIN_INPUT_HEIGHT,
       checkedIdx: this.defaultIdx,
       checkedList: [],
     };
@@ -158,26 +170,35 @@ export default {
     if (!this.popoverWidth) {
       this.popoverStyle.width = this.width; // 以输入框宽度为选择器列表宽度
     }
+    this.$emit("selectedChange", this.selected);
   },
   computed: {
-    selectedValue() {
-      return this.checkedIdx !== null
-        ? this.list[this.checkedIdx] &&
-            this.list[this.checkedIdx][this.labelName]
-        : "";
+    inputHeight() {
+      const map = {
+        sm: SM_MIN_INPUT_HEIGHT,
+        md: MD_MIN_INPUT_HEIGHT,
+        lg: LG_MIN_INPUT_HEIGHT,
+      };
+      return map[this.size];
     },
     inputStyle() {
-      const { height } = this;
+      const { inputHeight } = this;
       let border;
       if (this.isFocus) {
         border = "1px solid #409eff";
       }
       return {
         width: this.width,
-        height: `${height}px`,
-        padding: `${INPUT_PADDINT_TOP}px 12px`,
+        height: `${inputHeight}px`,
+        padding: `${INPUT_PADDING_TOP}px 22px ${INPUT_PADDING_BOTTOM}px 12px`, // 输入框右边有图片，所以设置为 22px
         border: border,
       };
+    },
+    selected() {
+      return this.checkedIdx !== null
+        ? this.list[this.checkedIdx] &&
+            this.list[this.checkedIdx][this.labelName]
+        : "";
     },
     isFocus() {
       return (this.hasValue || this.show) && this.focused;
@@ -188,9 +209,9 @@ export default {
     hasValue() {
       return this.multiple
         ? Array.isArray(this.checkedList) && this.checkedList.length > 0
-        : this.selectedValue !== undefined &&
-            this.selectedValue !== null &&
-            this.selectedValue !== "";
+        : this.selected !== undefined &&
+            this.selected !== null &&
+            this.selected !== "";
     },
   },
   watch: {
@@ -199,7 +220,7 @@ export default {
         this.checkedIdx = null;
       } else {
         this.checkedList = [];
-        this.height = MD_INPUT_MIN_HEIGHT;
+        this.height = MD_MIN_INPUT_HEIGHT;
       }
     },
     checkedIdx(idx) {
@@ -239,6 +260,7 @@ export default {
     handleCheck(e, item, idx) {
       if (!this.multiple) {
         this.checkedIdx = idx;
+        this.$emit("selectedChange", item.code);
         this.show = false;
       } else {
         e.preventDefault(); // 多选情况下阻止 input 失焦，使列表不关闭
@@ -251,14 +273,14 @@ export default {
     resetInputHeight() {
       const [{ offsetHeight }, offset] = [
         this.$refs.checkList,
-        INPUT_PADDINT_TOP * 2,
+        INPUT_PADDING_TOP * 2,
       ];
       // offsetHeight > MD_INPUT_MIN_HEIGHT - offset &&
       //   (this.height = offsetHeight + offset);
-      if (offsetHeight > MD_INPUT_MIN_HEIGHT - offset) {
+      if (offsetHeight > MD_MIN_INPUT_HEIGHT - offset) {
         this.height = offsetHeight + offset;
       } else {
-        this.height = MD_INPUT_MIN_HEIGHT;
+        this.height = MD_MIN_INPUT_HEIGHT;
       }
     },
     resetPopoverPosition() {
@@ -272,7 +294,7 @@ export default {
         this.checkedIdx = null;
       } else {
         this.checkedList = [];
-        this.height = MD_INPUT_MIN_HEIGHT;
+        this.height = MD_MIN_INPUT_HEIGHT;
       }
       this.show = false;
       this.$emit("clear");
@@ -294,7 +316,7 @@ export default {
     input {
       width: 100%;
       border: 1px solid #dcdfe6;
-      border-radius: 3px;
+      border-radius: 5px;
       box-sizing: border-box;
       transition: 0.3s;
       @include text-ellipsis;

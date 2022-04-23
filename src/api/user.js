@@ -14,8 +14,48 @@ export const loginByPhone = (body) => request.post("/login/cellphone", body);
  */
 export const loginByEmail = (body) => request.post("/login", body);
 
+/**
+ * 发送验证码
+ * @param {String} phone
+ * @param {String} ctcode
+ */
+export const sentCaptcha = (params) => request.get("/captcha/sent", { params });
+
+/**
+ * 验证验证码
+ * @param {String} phone
+ * @param {String} captcha
+ * @param {String} ctcode
+ */
+export const verifyCaptcha = (params) =>
+  request.get("/captcha/verify", { params });
+
+/**
+ * 二维码 key 生成
+ * @param {Number} timestamp
+ */
+export const generateQRKey = (params) =>
+  request.get("/login/qr/key", { params });
+
+/**
+ * 二维码图片生成
+ * @param {String} key
+ * @param {Boolean} qrimg
+ * @param {Number} timestamp
+ */
+export const createQRCode = (params) =>
+  request.get("/login/qr/create", { params });
+
+/**
+ * 二维码状态检查
+ * @param {String} key
+ * @param {Number} timestamp
+ */
+export const checkQRStatus = (params) =>
+  request.get("/login/qr/check", { params });
+
 // 检查登录状态
-export const getLoginStatus = () => request.get("/login/status");
+export const getLoginStatus = (body) => request.post("/login/status", body);
 
 /**
  * 获取用户详情
@@ -40,6 +80,4 @@ export const getUserPlaylist = (params) =>
 export const dailySignin = (params) => request.get("/daily_signin", { params });
 
 // 退出登录
-export const logout = () => {
-  request.get("/logout");
-};
+export const logout = () => request.get("/logout");

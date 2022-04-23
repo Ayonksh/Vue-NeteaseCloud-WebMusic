@@ -1,6 +1,6 @@
 <template>
   <div class="github">
-    <div class="img-wrap">
+    <div class="img-wrap" @click="openGithub()">
       <img :src="require('@/assets/head/github.png')" />
     </div>
   </div>
@@ -9,18 +9,23 @@
 <script>
 export default {
   name: "Github",
-  methods: {},
+  methods: {
+    openGithub() {
+      window.open("https://github.com/Ayonveig/Vue-NeteaseCloud-WebMusic");
+    },
+  },
 };
 </script>
 
 <style lang="scss" scoped>
 .github {
-  height: $header-height;
+  height: 100%;
   display: flex;
   align-items: center;
   .img-wrap {
     display: flex;
     align-items: center;
+    cursor: pointer;
     img {
       width: 24px;
       height: 24px;

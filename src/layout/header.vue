@@ -48,7 +48,6 @@ export default {
   position: fixed;
   width: 100%;
   height: $header-height;
-  line-height: $header-height; // 子组件会继承该属性，将对子组件的css写法产生影响
   padding: 0 20px;
   display: flex;
   justify-content: space-between;

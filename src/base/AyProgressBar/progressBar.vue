@@ -1,9 +1,9 @@
 <template>
   <div
+    ref="bar"
     class="progress-bar"
     :style="{ height: `${barHeight}px`, width: `${barWidth}px` }"
     @mousedown="handleClick"
-    ref="bar"
   >
     <div
       class="current"
@@ -11,10 +11,10 @@
       :style="curStyle"
     ></div>
     <div
+      ref="btn"
       v-show="!disable"
       :style="btnStyle"
       @mousedown="onMousedown"
-      ref="btn"
     ></div>
   </div>
 </template>

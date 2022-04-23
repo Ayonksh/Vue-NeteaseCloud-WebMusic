@@ -4,13 +4,9 @@
       <transition name="dialog">
         <div class="ay-dialog" v-show="visible" :style="dialogStyle">
           <div class="header-wrap">
-            <div>
-              <slot name="header">
-                <div>
-                  {{ title }}
-                </div>
-              </slot>
-            </div>
+            <slot name="header">
+              <div>{{ title }}</div>
+            </slot>
             <div class="close-wrap" @click.stop="closeDialog">
               <img :src="require('@/assets/icon/close-2.png')" />
             </div>
@@ -79,15 +75,16 @@ export default {
   left: 0;
   overflow: auto;
   background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 2050;
   .ay-dialog {
-    position: relative;
-    margin: 15vh auto 0 auto;
     background: #fff;
     border-radius: 10px;
     @include box-shadow(0, 1px, 3px, 0);
     .header-wrap {
-      padding: 10px 30px;
+      padding: 15px 30px;
       display: flex;
       justify-content: space-between;
       .close-wrap {
@@ -105,7 +102,7 @@ export default {
       padding: 15px 30px;
     }
     .footer-wrap {
-      padding: 10px 30px;
+      padding: 15px 30px;
     }
   }
 }

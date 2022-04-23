@@ -1,17 +1,16 @@
 <template>
   <ay-popover
+    class="message"
     :closeDelay="200"
     :wrapStyle="popoverStyle"
     trigger="click"
     placement="bottom"
   >
-    <div class="message">
-      <div class="img-wrap">
-        <img :src="require('@/assets/head/message.png')" />
-      </div>
+    <div class="img-wrap">
+      <img :src="require('@/assets/head/message.png')" />
     </div>
     <template slot="content">
-      <div class="message-wrap">
+      <div class="message-list">
         <div class="title">
           <span>消息</span>
           <span @click="allRead">一键已读</span>
@@ -26,10 +25,8 @@
                   :key="idx"
                 >
                   <div class="img-wrap">
-                    <img :src="`${item.fromUser.avatarUrl}`" />
-                    <img
-                      :src="`${item.fromUser.avatarDetail.identityIconUrl}`"
-                    />
+                    <img :src="item.fromUser.avatarUrl" />
+                    <img :src="item.fromUser.avatarDetail.identityIconUrl" />
                     <span v-if="item.newMsgCount > 0"></span>
                   </div>
                   <div class="info-wrap">
@@ -99,19 +96,20 @@ export default {
 
 <style lang="scss" scoped>
 .message {
-  height: $header-height;
+  height: 100%;
   display: flex;
   align-items: center;
   .img-wrap {
     display: flex;
     align-items: center;
+    cursor: pointer;
     img {
       width: 24px;
       height: 24px;
     }
   }
 }
-.message-wrap {
+.message-list {
   width: 100%;
   height: 500px;
   overflow-y: auto;

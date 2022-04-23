@@ -1,6 +1,6 @@
 <template>
   <div class="ay-input-wrap">
-    <div class="prepend-wrap">
+    <div class="prepend-wrap" :style="prependStyle">
       <slot name="prepend"></slot>
     </div>
     <div
@@ -39,16 +39,16 @@
         />
       </div>
     </div>
-    <div class="append-wrap">
+    <div class="append-wrap" :style="appendStyle">
       <slot name="append"></slot>
     </div>
   </div>
 </template>
 
 <script>
-const SM_INPUT_MIN_HEIGHT = 32;
-const MD_INPUT_MIN_HEIGHT = 36;
-const LG_INPUT_MIN_HEIGHT = 40;
+const SM_MIN_INPUT_HEIGHT = 32;
+const MD_MIN_INPUT_HEIGHT = 36;
+const LG_MIN_INPUT_HEIGHT = 40;
 const INPUT_PADDING_TOP = 2;
 const INPUT_PADDING_BOTTOM = 2;
 const MIN_INPUT_PADDING_LEFT = 12;
@@ -145,9 +145,9 @@ export default {
   computed: {
     inputHeight() {
       const map = {
-        sm: SM_INPUT_MIN_HEIGHT,
-        md: MD_INPUT_MIN_HEIGHT,
-        lg: LG_INPUT_MIN_HEIGHT,
+        sm: SM_MIN_INPUT_HEIGHT,
+        md: MD_MIN_INPUT_HEIGHT,
+        lg: LG_MIN_INPUT_HEIGHT,
       };
       return map[this.size];
     },
@@ -169,6 +169,14 @@ export default {
       return { ...fixStyle };
     },
     suffixStyle() {
+      const { fixStyle } = this;
+      return { ...fixStyle };
+    },
+    prependStyle() {
+      const { fixStyle } = this;
+      return { ...fixStyle };
+    },
+    appendStyle() {
       const { fixStyle } = this;
       return { ...fixStyle };
     },

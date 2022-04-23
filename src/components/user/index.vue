@@ -1,26 +1,25 @@
 <template>
-  <ay-loading :width="20" :loading="userLogining">
-    <div class="user-wrap">
-      <user v-show="isLogin"></user>
-      <login v-show="!isLogin"></login>
-    </div>
-  </ay-loading>
+  <div class="user-wrap">
+    <user v-show="isLogin"></user>
+    <login v-show="!isLogin"></login>
+  </div>
 </template>
 
 <script>
-import { AyLoading } from "@/base";
 import { userMixin } from "@/utils";
 import login from "./login";
 import user from "./user";
 export default {
   name: "User",
   mixins: [userMixin],
-  components: { login, user, AyLoading },
+  components: { login, user },
 };
 </script>
 
 <style lang="scss" scoped>
 .user-wrap {
-  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 </style>

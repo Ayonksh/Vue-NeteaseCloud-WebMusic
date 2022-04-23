@@ -86,14 +86,14 @@ export default {
 <style lang="scss" scoped>
 .ay-tab-nav-wrap {
   border-bottom: 1px $grey solid;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
   display: flex;
   align-items: center;
   .ay-tab-nav {
     display: flex;
     position: relative;
     &__item {
-      margin: 0 16px;
+      margin: 0 12px;
       height: 40px;
       line-height: 40px;
       cursor: pointer;

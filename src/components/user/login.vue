@@ -1,32 +1,37 @@
 <template>
-  <div class="login-wrap" @click="openLoginDialog">
-    <div class="img-wrap">
-      <img :src="require('@/assets/head/user.png')" />
+  <div class="login" @click="openLoginDialog">
+    <div class="unlogin">
+      <div class="img-wrap">
+        <img :src="require('@/assets/head/user.png')" />
+      </div>
+      <span>未登录</span>
     </div>
-    <div class="type">未登录</div>
     <ay-dialog
       class="dialog"
       v-model="dialogVisible"
-      width="320px"
+      width="340px"
       :handleClose="closeLoginDialog"
     >
       <template slot="header">
-        <p class="title">{{ activeName }}</p>
+        <p class="title">{{ activeTabName }}</p>
       </template>
-      <ay-tab v-model="activeName">
-        <ay-tab-pane :label="REGISTER_NAME" :name="REGISTER_NAME">
+      <ay-tab v-model="activeTabName">
+        <ay-tab-pane :label="PHONE_LOGIN" :name="PHONE_LOGIN">
           <div class="form-wrap">
             <ay-input
               class="input"
               v-model="phone"
+              size="lg"
               placeholder="请输入手机号"
               clearable
             >
               <template slot="prepend">
                 <ay-select
-                  width="100px"
+                  v-model="ctcode"
+                  width="80px"
                   popoverWidth="260px"
                   placement="bottom-start"
+                  size="lg"
                   :labelName="'code'"
                   :valueName="'en'"
                   :list="countriesCodeList"
@@ -50,16 +55,42 @@
               </template>
             </ay-input>
             <ay-input
-              v-model="code"
+              class="input"
+              style="margin: 0"
+              v-model="captcha"
+              size="lg"
               placeholder="请输入验证码"
               clearable
-            ></ay-input>
+            >
+              <template slot="prefix">
+                <div class="prefix-wrap">
+                  <img :src="require('@/assets/user/captcha.png')" />
+                </div>
+              </template>
+              <template slot="append">
+                <div
+                  class="captcha"
+                  :class="
+                    captchaName.indexOf('s') != -1 ? 'captcha__notAllowed' : ''
+                  "
+                  @click.stop="getCaptcha()"
+                >
+                  {{ captchaName }}
+                </div>
+              </template>
+            </ay-input>
+            <div class="needphone">请输入手机号</div>
+            <div class="login" @click.stop="login()">
+              <span>登录</span>
+            </div>
           </div>
         </ay-tab-pane>
-        <ay-tab-pane :label="LOGIN_NAME" :name="LOGIN_NAME">
+        <ay-tab-pane :label="ACCOUNT_LOGIN" :name="ACCOUNT_LOGIN">
           <div class="form-wrap">
             <ay-input
+              class="input"
               v-model="account"
+              size="lg"
               placeholder="请输入邮箱/手机号"
               clearable
             >
@@ -69,38 +100,47 @@
                 </div>
               </template>
             </ay-input>
-            <ay-input v-model="password" placeholder="请输入密码" show-password>
+            <ay-input
+              class="input"
+              v-model="password"
+              size="lg"
+              placeholder="请输入密码"
+              show-password
+            >
               <template slot="prefix">
                 <div class="prefix-wrap">
                   <img :src="require('@/assets/user/lock.png')" />
                 </div>
               </template>
             </ay-input>
+            <div class="login" @click.stop="login()">
+              <span>登录</span>
+            </div>
+          </div>
+        </ay-tab-pane>
+        <ay-tab-pane :label="QR_LOGIN" :name="QR_LOGIN">
+          <div class="qrcode-wrap">
+            <img :src="qrimg" />
           </div>
         </ay-tab-pane>
       </ay-tab>
-      <template slot="footer">
-        <div class="footer">
-          <div
-            class="register-btn btn"
-            v-if="activeName === REGISTER_NAME"
-            @click.stop="register()"
-          >
-            注册
-          </div>
-          <div class="login-btn btn" v-else @click.stop="login()">登录</div>
-        </div>
-      </template>
     </ay-dialog>
   </div>
 </template>
 
 <script>
-const LOGIN_NAME = "账号登录";
-const REGISTER_NAME = "用户注册";
-import { getCountriesCodeList } from "@/api";
+const PHONE_LOGIN = "手机登录";
+const ACCOUNT_LOGIN = "账号登录";
+const QR_LOGIN = "扫码登录";
+import {
+  sentCaptcha,
+  generateQRKey,
+  createQRCode,
+  checkQRStatus,
+  getCountriesCodeList,
+} from "@/api";
 import { AyDialog, AyInput, AySelect, AyTab, AyTabPane } from "@/base";
-import { userLogin, userMixin } from "@/utils";
+import { accountLogin, captchaLogin, qrcodeLogin, userMixin } from "@/utils";
 
 export default {
   name: "login",
@@ -108,20 +148,44 @@ export default {
   components: { AyDialog, AyInput, AySelect, AyTab, AyTabPane },
   data() {
     return {
-      REGISTER_NAME,
-      LOGIN_NAME,
+      PHONE_LOGIN,
+      ACCOUNT_LOGIN,
+      QR_LOGIN,
       dialogVisible: false,
-      activeName: LOGIN_NAME,
+      activeTabName: PHONE_LOGIN,
       phone: "",
-      code: "",
+      ctcode: "",
+      captcha: "",
+      captchaName: "获取验证码",
+      countDownTime: 60, // 验证码倒计时
       account: "",
       password: "",
+      qrkey: "",
+      qrimg: "",
+      qrstatus: "",
       countriesCodeList: [],
       loading: false,
+      popoverStyle: {
+        padding: "4px",
+        fontSize: "12px",
+        color: "#f33",
+      },
     };
   },
   created() {
     this.initCountriesCodeList();
+  },
+  watch: {
+    activeTabName(activeTabName) {
+      if (activeTabName == QR_LOGIN) {
+        if (!this.qrkey) {
+          this.getQRCode(); // 第一次打开时生成二维码
+          this.getQRStatus();
+        } else {
+          this.getQRStatus();
+        }
+      }
+    },
   },
   methods: {
     openLoginDialog() {
@@ -138,76 +202,156 @@ export default {
     },
     async login() {
       this.setLoading(true);
-      await userLogin(this.account, this.password).finally(() => {
-        this.closeLoginDialog();
-      });
+      if (this.activeTabName == PHONE_LOGIN) {
+        await captchaLogin(this.phone, this.captcha, this.ctcode).finally(
+          () => {
+            this.closeLoginDialog();
+          }
+        );
+      } else {
+        await accountLogin(this.account, this.password).finally(() => {
+          this.closeLoginDialog();
+        });
+      }
       this.setLoading(false);
     },
-    async register() {},
+    async getCaptcha() {
+      if (this.phone) {
+        let phone = Number(this.phone);
+        let timer = setInterval(() => {
+          this.countDownTime--;
+          this.captchaName = this.countDownTime + "s";
+          if (this.countDownTime <= 0) {
+            clearInterval(timer);
+            this.captchaName = "重新发送";
+            this.countDownTime = 60;
+          }
+        }, 1000);
+        await sentCaptcha({ phone: phone, ctcode: this.ctcode });
+      } else {
+        document.querySelector(".needphone").style.visibility = "visible";
+        // document.getElementsByClassName(".needphone").style.visibility = "visible";
+      }
+    },
+    async getQRCode() {
+      let timestamp = new Date().getTime();
+      const keyRes = await generateQRKey({ timestamp: timestamp });
+      this.qrkey = keyRes.data.unikey;
+      const imgRes = await createQRCode({
+        key: keyRes.data.unikey,
+        qrimg: true,
+        timestamp: timestamp,
+      });
+      this.qrimg = imgRes.data.qrimg;
+    },
+    async getQRStatus() {
+      let timer = setInterval(async () => {
+        let timestamp = new Date().getTime();
+        const codeRes = await checkQRStatus({
+          key: this.qrkey,
+          timestamp: timestamp,
+        });
+        this.qrstatus = codeRes.code;
+        if (this.activeTabName == QR_LOGIN) {
+          if (codeRes.code === 800) {
+            this.getQRCode();
+          } else if (codeRes.code === 803) {
+            clearInterval(timer);
+            qrcodeLogin(codeRes.cookie).finally(() => {
+              this.closeLoginDialog();
+            });
+          }
+        } else {
+          clearInterval(timer);
+        }
+      }, 5000);
+    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.login-wrap {
-  padding: 0 8px;
-  display: flex;
-  transition: 0.3s;
-  .img-wrap {
-    margin-right: 8px;
+.login {
+  .unlogin {
     display: flex;
     align-items: center;
-    img {
-      @include circle(30px);
-      background-color: $grey;
+    transition: 0.3s;
+    cursor: pointer;
+    .img-wrap {
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+      img {
+        @include circle(30px);
+        background-color: $grey;
+      }
     }
   }
   .dialog {
     color: $black;
     .title {
       font-size: 21px;
+      margin: 10px 0;
     }
     .form-wrap {
       .input {
-        width: 100%;
-        line-height: 36px; // 覆盖继承自父组件的属性
-        margin: 30px 0 10px;
-      }
-      .prefix-wrap {
-        height: 100%;
-        padding: 0 6px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        img {
-          width: 16px;
-          height: 16px;
+        margin: 30px 0;
+        .prefix-wrap {
+          height: 100%;
+          padding: 0 6px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
+          img {
+            width: 16px;
+            height: 16px;
+          }
+        }
+        .captcha {
+          width: 60px;
+          height: 100%;
+          margin: 0 10px;
+          color: $blue;
+          font-size: $font-size-sm;
+          line-height: 36px; // 此项用来垂直居中
+          cursor: pointer;
+          &__notAllowed {
+            cursor: not-allowed;
+          }
+        }
+        &:nth-child(2) {
+          margin-bottom: 40px;
         }
       }
-    }
-    .footer {
-      margin-bottom: 20px;
-      .btn {
+      .needphone {
+        margin: 10px 0;
+        color: $theme-color;
+        font-size: $font-size-xs;
+        line-height: 20px;
+        visibility: hidden;
+      }
+      .login {
         width: 100%;
         height: 40px;
         line-height: 40px;
         text-align: center;
         border-radius: 6px;
+        color: $white;
+        background-color: $theme-color;
         transition: 0.3s;
         cursor: pointer;
-      }
-      .login-btn {
-        background-color: $theme-color;
-        color: $white;
         @include box-shadow;
       }
-      .register-btn {
-        background-color: $white;
-        color: $black;
-        border: 2px $grey solid;
-        &:hover {
-          @include box-shadow;
-        }
+    }
+    .qrcode-wrap {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      img {
+        width: 200px;
+        height: 200px;
       }
     }
   }
