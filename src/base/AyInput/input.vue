@@ -30,12 +30,17 @@
           v-if="showClear"
           :src="require('@/assets/icon/close.png')"
           @mousedown.prevent
-          @click="clear"
+          @click="clear()"
         />
         <img
-          v-if="showPwdVisible"
+          v-if="showPwdVisible && !passwordVisible"
           :src="require('@/assets/icon/showpwd.png')"
-          @click="handlePasswordVisible"
+          @click="handlePasswordVisible()"
+        />
+        <img
+          v-else-if="passwordVisible"
+          :src="require('@/assets/icon/hidepwd.png')"
+          @click="handlePasswordVisible()"
         />
       </div>
     </div>
@@ -190,7 +195,7 @@ export default {
     },
     showPwdVisible() {
       return (
-        this.showPassword && !this.readonly && (!!this.hasValue || this.focused)
+        this.showPassword && !this.readonly && (!!this.hasValue || this.focused) // !!this.hasValue 是为了将此值变成变成布尔类型
       );
     },
     hasValue() {
@@ -261,6 +266,7 @@ export default {
       display: flex;
       justify-content: center;
       align-items: center;
+      cursor: pointer;
       img {
         width: 16px;
         height: 16px;

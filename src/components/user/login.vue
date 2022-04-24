@@ -314,6 +314,7 @@ export default {
           margin: 0 10px;
           color: $blue;
           font-size: $font-size-sm;
+          text-align: center;
           line-height: 36px; // 此项用来垂直居中
           cursor: pointer;
           &__notAllowed {
