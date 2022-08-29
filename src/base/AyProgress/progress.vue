@@ -2,7 +2,7 @@
   <div class="ay-progress">
     <div
       class="ay-progress-bar"
-      :style="{ width: barWidth, height: barHeight }"
+      :style="barStyle"
       v-if="type === 'line'"
       ref="bar"
       @click="handleClick"
@@ -77,7 +77,7 @@ export default {
     event: "percentageChange",
   },
   props: {
-    // 当前进度，值为 0 - 100
+    // 当前进度，值为 0 - 1
     percentage: Number,
     // 种类
     type: {
@@ -87,6 +87,11 @@ export default {
     },
     // 是否允许调整进度
     disable: Boolean,
+    // 进度环的线条宽度
+    strokeWidth: {
+      type: String,
+      default: "4px",
+    },
     // 颜色
     color: {
       type: [String, Array, Function],
@@ -107,15 +112,10 @@ export default {
       default: "horizontal",
       validator: (value) => ["horizontal", "vertical"].indexOf(value) > -1,
     },
-    // 进度条宽度
-    barWidth: {
+    // 进度条长度
+    barLength: {
       type: String,
       default: "500px",
-    },
-    // 进度条高度
-    barHeight: {
-      type: String,
-      default: "4px",
     },
     // 进度条的小球大小计算系数
     coefficient: {
@@ -129,11 +129,6 @@ export default {
       type: String,
       default: "50px",
     },
-    // 进度环的线条宽度
-    strokeWidth: {
-      type: String,
-      default: "4px",
-    },
     // 进度环的线条路径两端的形状
     strokeLinecap: {
       type: String,
@@ -143,8 +138,7 @@ export default {
   },
   data() {
     return {
-      barWidth_: Number(this.barWidth.split("px")[0]),
-      barHeight_: Number(this.barHeight.split("px")[0]),
+      barLength_: Number(this.barLength.split("px")[0]),
       movingStartX: 0,
       movingStartY: 0,
       moving: false,
@@ -155,24 +149,39 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      if (this.type === "line" && this.barMode === "vertical") {
-        this.reflow();
+      if (this.type === "line") {
         on(document, "mouseup", this.stopMove);
+        if (this.barMode === "vertical") {
+          this.reflow();
+        }
       } else if (this.type !== "line") {
         this.setSvgBtn();
       }
     });
   },
   computed: {
+    barStyle() {
+      if (this.barMode === "horizontal") {
+        return {
+          width: this.barLength,
+          height: this.strokeWidth,
+        };
+      } else {
+        return {
+          width: this.strokeWidth,
+          height: this.barLength,
+        };
+      }
+    },
     barInnerStyle() {
       if (this.barMode === "horizontal") {
         return {
-          width: `${(this.percentage / 100) * this.barWidth_}px`,
+          width: `${this.percentage * this.barLength_}px`,
           backgroundColor: this.stroke,
         };
       } else {
         return {
-          height: `${(this.percentage / 100) * this.barHeight_}px`,
+          height: `${this.percentage * this.barLength_}px`,
           backgroundColor: this.stroke,
         };
       }
@@ -202,22 +211,11 @@ export default {
     },
     btnPos() {
       const { btnWidth } = this;
-      if (this.barMode === "horizontal") {
-        const currentPos =
-          (this.percentage / 100) * this.barWidth_ - btnWidth / 2;
-        return `${currentPos}px`;
-      } else {
-        const currentPos =
-          (this.percentage / 100) * this.barHeight_ - btnWidth / 2;
-        return `${currentPos}px`;
-      }
+      const currentPos = this.percentage * this.barLength_ - btnWidth / 2;
+      return `${currentPos}px`;
     },
     btnWidth() {
-      if (this.barMode === "horizontal") {
-        return this.barHeight_ * this.coefficient;
-      } else {
-        return this.barWidth_ * this.coefficient;
-      }
+      return this.strokeWidth_ * this.coefficient;
     },
     groundWidth() {
       return this.radius_ * 2 + this.strokeWidth_ / 2 + 10; // 加 10 是为了增大画布宽高
@@ -261,19 +259,19 @@ export default {
     },
     circlePathStyle() {
       return {
-        strokeDasharray: `${
-          this.perimeter * this.rate * (this.percentage / 100)
-        }px, ${this.perimeter}px`,
+        strokeDasharray: `${this.perimeter * this.rate * this.percentage}px, ${
+          this.perimeter
+        }px`,
         strokeDashoffset: `${this.strokeDashoffset}px`,
         // transition: "stroke-dasharray 0.6s ease 0s, stroke 0.6s ease",
       };
     },
     status() {
-      if (this.percentage >= 75) {
+      if (this.percentage >= 0.75) {
         return "success";
-      } else if (this.percentage >= 50 && this.percentage < 75) {
+      } else if (this.percentage >= 0.5 && this.percentage < 0.75) {
         return "inspiring";
-      } else if (this.percentage >= 25 && this.percentage < 50) {
+      } else if (this.percentage >= 0.25 && this.percentage < 0.5) {
         return "warning";
       } else {
         return "danger";
@@ -321,11 +319,7 @@ export default {
     },
     progressTextSize() {
       if (this.type === "line") {
-        if (this.barMode === "horizontal") {
-          return 12 + this.barHeight_ * 0.1;
-        } else {
-          return 12 + this.barWidth_ * 0.1;
-        }
+        return 12 + this.strokeWidth_ * 0.1;
       } else {
         return this.groundWidth * 0.1 + 2;
       }
@@ -334,7 +328,7 @@ export default {
       if (typeof this.format === "function") {
         return this.format(this.percentage) || "";
       } else {
-        return `${this.percentage.toFixed(1)}%`;
+        return `${(this.percentage * 100).toFixed(1)}%`;
       }
     },
   },
@@ -365,7 +359,7 @@ export default {
       let path = document.querySelector("#svg-path");
       let pathLength = path.getTotalLength() || 0;
       let startPosition =
-        pathLength * rate * (data.svgPercentage / 100) - strokeDashoffset;
+        pathLength * rate * data.svgPercentage - strokeDashoffset;
       let startPoint = path.getPointAtLength(startPosition);
 
       gsap.set(btn, {
@@ -458,17 +452,15 @@ export default {
         if (distance < -strokeDashoffset) {
           data.svgPercentage = 0;
         } else if (distance > pathLength + strokeDashoffset) {
-          data.svgPercentage = 100;
+          data.svgPercentage = 1;
         } else {
           data.svgPercentage =
-            ((distance + strokeDashoffset) /
-              (pathLength + 2 * strokeDashoffset)) *
-            100;
+            (distance + strokeDashoffset) / (pathLength + 2 * strokeDashoffset);
         }
       }
     },
     formatPercentage(percentage) {
-      return Math.max(Math.min(percentage, 100), 0);
+      return Math.max(Math.min(percentage, 1), 0);
     },
     handleClick(e) {
       if (this.disable) return;
@@ -478,10 +470,10 @@ export default {
       }
       let percent;
       if (this.barMode === "horizontal") {
-        percent = this.formatPercentage((e.offsetX / this.barWidth_) * 100);
+        percent = this.formatPercentage(e.offsetX / this.barLength_);
       } else {
         percent = this.formatPercentage(
-          ((this.barHeight_ - e.offsetY) / this.barHeight_) * 100
+          (this.barLength_ - e.offsetY) / this.barLength_
         );
       }
       this.$emit("percentageChange", percent);
@@ -504,13 +496,12 @@ export default {
         let percent;
         if (this.barMode === "horizontal") {
           percent = this.formatPercentage(
-            ((e.clientX - this.movingStartX) / this.barWidth_) * 100
+            (e.clientX - this.movingStartX) / this.barLength_
           );
         } else {
           percent = this.formatPercentage(
-            ((this.barHeight_ - (e.clientY - this.movingStartY)) /
-              this.barHeight_) *
-              100
+            (this.barLength_ - (e.clientY - this.movingStartY)) /
+              this.barLength_
           );
         }
         this.$emit("percentageChange", percent);
@@ -545,7 +536,7 @@ export default {
     },
     getColorArray() {
       const color = this.color;
-      const span = 100 / color.length;
+      const span = 1 / color.length;
       return color.map((seriesColor, index) => {
         if (typeof seriesColor === "string") {
           return {

@@ -42,7 +42,7 @@
           :showProgress="false"
           @bar-click="setAudioCurrentTime"
           @moving="onArtificialMoving"
-          @move-stop="onArtificialMoveStop"
+          @moving-stop="onArtificialMoveStop"
         />
         <p class="bar-time">{{ currentSong.durationText }}</p>
       </div>
@@ -63,7 +63,7 @@
           </div>
           <div class="item" v-else @click="toggleMute">
             <img
-              v-if="volumeProgress < 50"
+              v-if="volumeProgress < 0.5"
               :src="require('@/assets/mini-player/volumeLow.png')"
             />
             <img v-else :src="require('@/assets/mini-player/volumeHigh.png')" />
@@ -71,9 +71,9 @@
           <template slot="content">
             <ay-progress
               v-model="volumeProgress"
+              strokeWidth="5px"
               barMode="vertical"
-              barWidth="5px"
-              barHeight="100px"
+              barLength="100px"
               color="red"
             />
           </template>
@@ -155,7 +155,7 @@ export default {
     return {
       playModeConfig,
       playProgress: 0,
-      volumeProgress: 80,
+      volumeProgress: 0.8,
       tempVolume: 0,
       ready: false,
       error: false,
@@ -225,7 +225,7 @@ export default {
     },
     currentTime(time) {
       if (!this.artificialMoving)
-        this.playProgress = (time / this.currentSong.durationSecond) * 100;
+        this.playProgress = time / this.currentSong.durationSecond;
     },
     error(err) {
       if (err) {
@@ -243,7 +243,7 @@ export default {
       this.setPlaylistShow(!this.isPlaylistShow);
     },
     setAudioCurrentTime() {
-      const time = (this.playProgress / 100) * this.currentSong.durationSecond;
+      const time = this.playProgress * this.currentSong.durationSecond;
       if (isNaN(time)) return;
       this.audio.currentTime = time;
     },
