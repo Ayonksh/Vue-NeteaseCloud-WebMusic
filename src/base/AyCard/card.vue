@@ -52,6 +52,7 @@ export default {
 <style lang="scss" scoped>
 .ay-card {
   transition: 0.3s;
+  border-radius: 10px;
   &__header {
     padding: 10px 20px;
     border-bottom: 1px solid $grey;

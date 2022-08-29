@@ -1,44 +1,46 @@
 <template>
   <div
-    class="ay-carousel-wrap"
+    class="ay-carousel"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <div class="ay-carousel" :style="{ height: height }">
+    <div class="ay-carousel__body" :style="{ height: height }">
       <slot></slot>
+      <transition v-if="arrowDisplay" name="ay-arrow-left">
+        <div
+          class="ay-carousel__arrow ay-carousel__arrow--left"
+          v-show="arrow === 'always' || hover"
+          @click.stop="prev"
+        >
+          <ay-svg-icon class="icon" icon="arrow-left-white" />
+        </div>
+      </transition>
+      <transition v-if="arrowDisplay" name="ay-arrow-right">
+        <div
+          class="ay-carousel__arrow ay-carousel__arrow--right"
+          v-show="arrow === 'always' || hover"
+          @click.stop="next"
+        >
+          <ay-svg-icon class="icon" icon="arrow-right-white" />
+        </div>
+      </transition>
     </div>
-    <div class="ay-carousel-control">
-      <div
-        class="ay-carousel-control__left ay-carousel-control__trigger"
-        @click.stop="prev"
-      >
-        <img
-          class="icon"
-          :src="require('@/assets/icon/arrow-left-bold-dark.png')"
-        />
-      </div>
-      <div
-        class="ay-carousel-control__right ay-carousel-control__trigger"
-        @click.stop="next"
-      >
-        <img
-          class="icon"
-          :src="require('@/assets/icon/arrow-right-bold-dark.png')"
-        />
-      </div>
-    </div>
-    <div class="ay-carousel-indicator">
-      <div
-        class="ay-carousel-indicator__item"
+    <ul
+      v-if="indicatorPosition !== 'none'"
+      class="ay-carousel__indicator"
+      :style="indicatorStyle"
+    >
+      <li
+        class="ay-carousel__indicator-item"
         :class="
-          activeIndex === index ? 'ay-carousel-indicator__item__active' : ''
+          activeIndex === index ? 'ay-carousel__indicator-item--active' : ''
         "
         v-for="(item, index) in items"
         :key="index"
         @mouseenter="throttledIndicatorHover(index)"
-        @click="handleIndicatorClick(index)"
-      ></div>
-    </div>
+        @click.stop="handleIndicatorClick(index)"
+      ></li>
+    </ul>
   </div>
 </template>
 
@@ -47,13 +49,18 @@ import { throttle } from "throttle-debounce";
 export default {
   name: "AyCarousel",
   props: {
+    initialIndex: {
+      type: Number,
+      default: 0,
+    },
     height: {
       type: String,
-      default: "200px",
+      default: "300px",
     },
     trigger: {
       type: String,
       default: "hover",
+      validator: (value) => ["click", "hover"].indexOf(value) > -1,
     },
     autoplay: {
       type: Boolean,
@@ -62,6 +69,21 @@ export default {
     interval: {
       type: Number,
       default: 3000,
+    },
+    type: {
+      type: String,
+      default: "",
+      validator: (value) => ["", "card"].indexOf(value) > -1,
+    },
+    arrow: {
+      type: String,
+      default: "hover",
+      validator: (value) => ["always", "hover", "never"].indexOf(value) > -1,
+    },
+    indicatorPosition: {
+      type: String,
+      default: "",
+      validator: (value) => ["", "none", "outside"].indexOf(value) > -1,
     },
   },
   data() {
@@ -79,12 +101,38 @@ export default {
   },
   mounted() {
     this.updateItems();
-    this.activeIndex = 0;
-    this.startTimer();
+    this.$nextTick(() => {
+      if (this.initialIndex < this.items.length && this.initialIndex >= 0) {
+        this.activeIndex = this.initialIndex;
+      }
+      this.startTimer();
+    });
+  },
+  computed: {
+    arrowDisplay() {
+      return this.arrow !== "never";
+    },
+    indicatorStyle() {
+      if (this.indicatorPosition === "outside" || this.type === "card") {
+        return {
+          position: "static",
+          justifyContent: "center",
+          alignItems: "center",
+        };
+      } else {
+        return {
+          position: "absolute",
+          bottom: "0",
+          left: "50%",
+          transform: "translateX(-50%)",
+        };
+      }
+    },
   },
   watch: {
-    activeIndex() {
+    activeIndex(val, oldVal) {
       this.resetItemPosition();
+      this.$emit("change", val, oldVal);
     },
     autoplay(value) {
       value ? this.startTimer() : this.pauseTimer();
@@ -117,10 +165,17 @@ export default {
         this.timer = null;
       }
     },
+    resetTimer() {
+      this.pauseTimer();
+      this.startTimer();
+    },
     updateItems() {
       this.items = this.$children.filter(
         (child) => child.$options.name === "AyCarouselItem"
       );
+    },
+    setActiveIndex(index) {
+      this.activeIndex = index;
     },
     getPrevIndex(activeIndex = this.activeIndex) {
       let index = activeIndex - 1;
@@ -149,62 +204,62 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.ay-carousel-wrap {
-  margin: 0 auto;
+.ay-carousel {
   position: relative;
-  &:hover {
-    .ay-carousel-control {
-      display: block;
-    }
-  }
-  .ay-carousel {
+  .ay-carousel__body {
     position: relative;
     overflow: hidden;
-  }
-  .ay-carousel-control {
-    display: none;
-    width: 100%;
-    height: 100%;
-    color: $black;
-    &__trigger {
+    .ay-carousel__arrow {
       position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      @include circle(36px);
+      background-color: $blue-light;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       cursor: pointer;
-      height: 90%;
-      bottom: 0;
-      width: 46px;
+      transition: transform 0.5s ease-in-out;
       z-index: $carousel-trigger-index;
       .icon {
-        position: absolute;
-        top: 42%;
-        transform: translateY(-50%);
-        width: 40px;
-        height: 40px;
+        font-size: 12px;
+      }
+      &--left {
+        left: 16px;
+      }
+      &--right {
+        right: 16px;
+      }
+      &:hover {
+        background-color: $blue;
       }
     }
-    &__left {
-      left: 0;
-    }
-    &__right {
-      right: 0;
-    }
   }
-  .ay-carousel-indicator {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: -10%;
+  .ay-carousel__indicator {
     display: flex;
-    &__item {
-      width: 6px;
-      height: 6px;
-      cursor: pointer;
-      border-radius: 6px;
+    list-style: none;
+    z-index: 10;
+    &-item {
+      width: 8px;
+      height: 8px;
+      margin: 12px 5px;
+      border-radius: 50%;
       background: $grey;
-      margin: 0 6px;
-      &__active {
+      cursor: pointer;
+      &--active {
         background: $theme-color;
       }
     }
   }
+}
+.ay-arrow-left-enter,
+.ay-arrow-left-leave-active {
+  transform: translateY(-50%) translateX(-10px);
+  opacity: 0;
+}
+.ay-arrow-right-enter,
+.ay-arrow-right-leave-active {
+  transform: translateY(-50%) translateX(10px);
+  opacity: 0;
 }
 </style>

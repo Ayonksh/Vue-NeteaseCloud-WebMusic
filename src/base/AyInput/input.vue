@@ -1,50 +1,65 @@
 <template>
-  <div class="ay-input-wrap">
-    <div class="prepend-wrap" :style="prependStyle">
+  <div class="ay-input">
+    <div class="ay-input__prepend" :style="prependStyle">
       <slot name="prepend"></slot>
     </div>
     <div
-      class="input-wrap"
+      class="ay-input__body"
       @mouseenter="hovering = true"
       @mouseleave="hovering = false"
     >
-      <div class="fix prefix-wrap" ref="prefix" :style="prefixStyle">
+      <div
+        class="ay-input__fix ay-input__prefix"
+        :style="prefixStyle"
+        ref="prefix"
+      >
         <slot name="prefix"></slot>
       </div>
       <input
+        class="ay-input__inner"
+        :style="[inputStyle, customStyle]"
+        v-bind="$attrs"
         :value="value"
         :type="showPassword ? (passwordVisible ? 'text' : 'password') : type"
+        :placeholder="placeholder"
         :disabled="disabled"
         :readonly="readonly"
-        :placeholder="placeholder"
-        :style="[wrapStyle, inputStyle]"
         @input="handleInput"
         @focus="handleFocus"
         @blur="handleBlur"
       />
-      <div class="fix suffix-wrap" ref="suffix" :style="suffixStyle">
-        <template v-if="!showClear || !showPwdVisible">
+      <div
+        class="ay-input__fix ay-input__suffix"
+        :style="suffixStyle"
+        ref="suffix"
+      >
+        <template v-if="!showClear || !showPwdVisible || !isWordLimitVisible">
           <slot name="suffix"></slot>
         </template>
-        <img
+        <ay-svg-icon
           v-if="showClear"
-          :src="require('@/assets/icon/close.png')"
-          @mousedown.prevent
-          @click="clear()"
+          class="icon"
+          icon="close"
+          @click="clear"
         />
-        <img
+        <ay-svg-icon
           v-if="showPwdVisible && !passwordVisible"
-          :src="require('@/assets/icon/showpwd.png')"
-          @click="handlePasswordVisible()"
+          class="icon"
+          icon="showpwd"
+          @click="handlePasswordVisible"
         />
-        <img
+        <ay-svg-icon
           v-else-if="passwordVisible"
-          :src="require('@/assets/icon/hidepwd.png')"
-          @click="handlePasswordVisible()"
+          class="icon"
+          icon="hidepwd"
+          @click="handlePasswordVisible"
         />
+        <span v-if="isWordLimitVisible" class="ay-input__count">
+          {{ textLength }}/{{ upperLimit }}
+        </span>
       </div>
     </div>
-    <div class="append-wrap" :style="appendStyle">
+    <div class="ay-input__append" :style="appendStyle">
       <slot name="append"></slot>
     </div>
   </div>
@@ -54,8 +69,17 @@
 const SM_MIN_INPUT_HEIGHT = 32;
 const MD_MIN_INPUT_HEIGHT = 36;
 const LG_MIN_INPUT_HEIGHT = 40;
-const INPUT_PADDING_TOP = 2;
-const INPUT_PADDING_BOTTOM = 2;
+const INPUT_HEIGHT_MAP = {
+  sm: SM_MIN_INPUT_HEIGHT,
+  md: MD_MIN_INPUT_HEIGHT,
+  lg: LG_MIN_INPUT_HEIGHT,
+};
+const INPUT_PADDING_TopBottom = 2;
+const INPUT_PADDING_MAP = {
+  sm: INPUT_PADDING_TopBottom,
+  md: INPUT_PADDING_TopBottom * 1.5,
+  lg: INPUT_PADDING_TopBottom * 2,
+};
 const MIN_INPUT_PADDING_LEFT = 12;
 const MIN_INPUT_PADDING_RIGHT = 12;
 const DEFAULT_TYPE = [
@@ -87,21 +111,21 @@ export default {
   name: "AyInput",
   model: {
     prop: "value",
-    event: "change",
+    event: "inputChange",
   },
   props: {
     value: String,
     type: {
       type: String,
-      validator: (type) => DEFAULT_TYPE.indexOf(type) > -1,
+      validator: (type) => DEFAULT_TYPE.indexOf(type) != -1,
       default: "text",
     },
     size: {
       type: String,
-      validator: (type) => ["sm", "md", "lg"].indexOf(type) > -1,
+      validator: (type) => ["sm", "md", "lg"].indexOf(type) != -1,
       default: "md",
     },
-    wrapStyle: Object,
+    customStyle: Object,
     placeholder: String,
     disabled: Boolean,
     readonly: Boolean,
@@ -117,15 +141,11 @@ export default {
       type: Boolean,
       default: false,
     },
-    autofocus: Boolean,
-    label: String,
-    prepend: String,
-    append: String,
-    minlength: Number,
-    maxlength: Number,
   },
   data() {
     return {
+      inputHeight: INPUT_HEIGHT_MAP[this.size],
+      inputPadding: INPUT_PADDING_MAP[this.size],
       prefixWidth: MIN_INPUT_PADDING_LEFT,
       suffixWidth: MIN_INPUT_PADDING_RIGHT,
       focused: false,
@@ -148,19 +168,11 @@ export default {
     }
   },
   computed: {
-    inputHeight() {
-      const map = {
-        sm: SM_MIN_INPUT_HEIGHT,
-        md: MD_MIN_INPUT_HEIGHT,
-        lg: LG_MIN_INPUT_HEIGHT,
-      };
-      return map[this.size];
-    },
     inputStyle() {
-      const { inputHeight, suffixWidth, prefixWidth } = this;
+      const { inputHeight, inputPadding, suffixWidth, prefixWidth } = this;
       return {
         height: `${inputHeight}px`,
-        padding: `${INPUT_PADDING_TOP}px ${suffixWidth}px ${INPUT_PADDING_BOTTOM}px ${prefixWidth}px`,
+        padding: `${inputPadding}px ${suffixWidth}px ${inputPadding}px ${prefixWidth}px`,
       };
     },
     fixStyle() {
@@ -203,10 +215,28 @@ export default {
         ? ""
         : String(this.value);
     },
+    isWordLimitVisible() {
+      return (
+        this.showWordLimit &&
+        this.$attrs.maxlength &&
+        this.type === "text" &&
+        !this.readonly &&
+        !this.showPassword
+      );
+    },
+    upperLimit() {
+      return this.$attrs.maxlength;
+    },
+    textLength() {
+      if (typeof this.value === "number") {
+        return String(this.value).length;
+      }
+      return (this.value || "").length;
+    },
   },
   methods: {
     handleInput(event) {
-      this.$emit("change", event.target.value);
+      this.$emit("inputChange", event.target.value);
     },
     handleFocus() {
       this.focused = true;
@@ -217,8 +247,7 @@ export default {
       this.$emit("blur");
     },
     clear() {
-      this.$emit("input", "");
-      this.$emit("change", "");
+      this.$emit("inputChange", "");
       this.$emit("clear");
     },
     handlePasswordVisible() {
@@ -229,47 +258,56 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.ay-input-wrap {
+.ay-input {
   display: flex;
   position: relative;
-  .input-wrap {
+  .ay-input__body {
     min-width: 120px;
     width: 100%;
     position: relative;
-    input {
+    .ay-input__inner {
       width: 100%;
-      border-radius: 5px;
       border: 1px solid #dcdfe6;
-      transition: 0.3s;
+      border-radius: 5px;
       box-sizing: border-box;
+      @include text-ellipsis;
       &:hover {
-        border: 1px solid $grey-dark;
+        border-color: $grey-dark;
       }
       &:focus {
         outline: none;
-        border: 1px solid #409eff;
+        border-color: $blue-light;
       }
     }
-    .fix {
-      z-index: 20;
-      transition: 0.3s;
+    .ay-input__fix {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-    }
-    .prefix-wrap {
-      left: 0;
-    }
-    .suffix-wrap {
-      right: 0;
-      padding: 0 6px;
+      z-index: 20;
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: pointer;
-      img {
-        width: 16px;
-        height: 16px;
+    }
+    .ay-input__prefix {
+      left: 0;
+      padding: 0 6px;
+    }
+    .ay-input__suffix {
+      right: 0;
+      padding: 0 6px;
+      .icon {
+        font-size: 16px;
+        cursor: pointer;
+        opacity: 0.5;
+      }
+      .ay-input__count {
+        color: $grey-dark;
+        font-size: 12px;
+      }
+    }
+    &:hover {
+      .icon {
+        opacity: 1;
       }
     }
   }

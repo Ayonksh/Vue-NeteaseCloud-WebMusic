@@ -34,10 +34,12 @@
         </div>
       </div>
       <div class="progress-bar-wrap">
-        <p class="bar-time">{{ formatTime(currentTime) }}</p>
-        <ay-progress-bar
+        <p class="bar-time" v-if="currentTime">{{ formatTime(currentTime) }}</p>
+        <ay-progress
           v-model="playProgress"
           :disable="disable"
+          color="red"
+          :showProgress="false"
           @bar-click="setAudioCurrentTime"
           @moving="onArtificialMoving"
           @move-stop="onArtificialMoveStop"
@@ -50,31 +52,30 @@
         <ay-popover
           trigger="hover"
           placement="top"
-          :wrapStyle="{ width: '30px', 'border-radius': '5px' }"
+          :customStyle="{
+            width: '30px',
+            'border-radius': '5px',
+            padding: '20px',
+          }"
         >
           <div class="item" v-if="isMute" @click="toggleMute">
             <img :src="require('@/assets/mini-player/volumeMute.png')" />
           </div>
           <div class="item" v-else @click="toggleMute">
             <img
-              v-if="volumeProgress < 0.5"
+              v-if="volumeProgress < 50"
               :src="require('@/assets/mini-player/volumeLow.png')"
             />
             <img v-else :src="require('@/assets/mini-player/volumeHigh.png')" />
           </div>
           <template slot="content">
-            <div
-              class="volume-bar"
-              style="display: flex; justify-content: center"
-            >
-              <ay-progress-bar
-                v-model="volumeProgress"
-                mode="vertical"
-                :barWidth="5"
-                :barHeight="100"
-                color="red"
-              />
-            </div>
+            <ay-progress
+              v-model="volumeProgress"
+              barMode="vertical"
+              barWidth="5px"
+              barHeight="100px"
+              color="red"
+            />
           </template>
         </ay-popover>
       </div>
@@ -129,7 +130,7 @@ const ERROR_MAP = {
     info: "无法播放，可能是VIP歌曲，请切换歌曲",
   },
 };
-import { AyProgressBar, AyPopover } from "@/base";
+import { AyProgress, AyPopover } from "@/base";
 import { playModeConfig, defaultMode } from "@/config";
 import {
   isNaN,
@@ -142,7 +143,7 @@ import {
 export default {
   name: "MiniPlayer",
   mixins: [musicMixin],
-  components: { AyProgressBar, AyPopover },
+  components: { AyProgress, AyPopover },
   metaInfo() {
     return {
       title: this.currentSong.id
@@ -154,7 +155,7 @@ export default {
     return {
       playModeConfig,
       playProgress: 0,
-      volumeProgress: 0.8,
+      volumeProgress: 80,
       tempVolume: 0,
       ready: false,
       error: false,
@@ -224,7 +225,7 @@ export default {
     },
     currentTime(time) {
       if (!this.artificialMoving)
-        this.playProgress = time / this.currentSong.durationSecond;
+        this.playProgress = (time / this.currentSong.durationSecond) * 100;
     },
     error(err) {
       if (err) {
@@ -242,7 +243,7 @@ export default {
       this.setPlaylistShow(!this.isPlaylistShow);
     },
     setAudioCurrentTime() {
-      const time = this.playProgress * this.currentSong.durationSecond;
+      const time = (this.playProgress / 100) * this.currentSong.durationSecond;
       if (isNaN(time)) return;
       this.audio.currentTime = time;
     },

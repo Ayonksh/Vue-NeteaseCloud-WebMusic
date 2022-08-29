@@ -1,7 +1,7 @@
 <template>
   <ay-popover
     class="user"
-    :wrapStyle="popoverStyle"
+    :customStyle="popoverStyle"
     trigger="hover"
     placement="bottom"
     :closeDelay="200"

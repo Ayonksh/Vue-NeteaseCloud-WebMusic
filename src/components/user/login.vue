@@ -1,10 +1,10 @@
 <template>
   <div class="login" @click="openLoginDialog">
     <div class="unlogin">
-      <div class="img-wrap">
-        <img :src="require('@/assets/head/user.png')" />
+      <div class="icon-wrapper">
+        <ay-svg-icon class="icon" icon="user" />
       </div>
-      <span>未登录</span>
+      <span class="status">未登录</span>
     </div>
     <ay-dialog
       class="dialog"
@@ -28,13 +28,13 @@
               <template slot="prepend">
                 <ay-select
                   v-model="ctcode"
-                  width="80px"
-                  popoverWidth="260px"
                   placement="bottom-start"
+                  popoverWidth="280px"
                   size="lg"
+                  width="80px"
+                  :list="countriesCodeList"
                   :labelName="'code'"
                   :valueName="'en'"
-                  :list="countriesCodeList"
                   :defaultIdx="0"
                   clearable
                 >
@@ -63,9 +63,7 @@
               clearable
             >
               <template slot="prefix">
-                <div class="prefix-wrap">
-                  <img :src="require('@/assets/user/captcha.png')" />
-                </div>
+                <ay-svg-icon class="icon" icon="captcha" />
               </template>
               <template slot="append">
                 <div
@@ -95,9 +93,7 @@
               clearable
             >
               <template slot="prefix">
-                <div class="prefix-wrap">
-                  <img :src="require('@/assets/user/phone.png')" />
-                </div>
+                <ay-svg-icon class="icon" icon="phone" />
               </template>
             </ay-input>
             <ay-input
@@ -108,9 +104,7 @@
               show-password
             >
               <template slot="prefix">
-                <div class="prefix-wrap">
-                  <img :src="require('@/assets/user/lock.png')" />
-                </div>
+                <ay-svg-icon class="icon" icon="pwd" />
               </template>
             </ay-input>
             <div class="login" @click.stop="login()">
@@ -274,16 +268,20 @@ export default {
 .login {
   .unlogin {
     display: flex;
+    justify-content: center;
     align-items: center;
     transition: 0.3s;
     cursor: pointer;
-    .img-wrap {
+    .icon-wrapper {
       margin-right: 8px;
       display: flex;
+      justify-content: center;
       align-items: center;
-      img {
-        @include circle(30px);
-        background-color: $grey;
+      @include circle(28px);
+      background-color: $grey-light;
+      .icon {
+        font-size: 24px;
+        cursor: pointer;
       }
     }
   }
@@ -296,17 +294,8 @@ export default {
     .form-wrap {
       .input {
         margin: 30px 0;
-        .prefix-wrap {
-          height: 100%;
-          padding: 0 6px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          img {
-            width: 16px;
-            height: 16px;
-          }
+        .icon {
+          font-size: 16px;
         }
         .captcha {
           width: 60px;

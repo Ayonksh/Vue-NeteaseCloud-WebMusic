@@ -1,6 +1,15 @@
 <template>
-  <div class="ay-carousel__item" :style="itemStyle" v-show="ready">
-    <div class="ay-carousel__item__mask" v-show="!active"></div>
+  <div
+    v-show="ready"
+    class="ay-carousel__item"
+    :style="itemStyle"
+    @click="handleItemClick"
+  >
+    <div
+      v-if="$parent.type === 'card'"
+      v-show="!active"
+      class="ay-carousel__item-mask"
+    ></div>
     <slot></slot>
   </div>
 </template>
@@ -13,9 +22,9 @@ export default {
     return {
       ready: false,
       active: false,
+      inStage: false,
       translate: 0,
       scale: 1,
-      inStage: false,
     };
   },
   created() {
@@ -23,7 +32,6 @@ export default {
   },
   computed: {
     itemStyle() {
-      const value = `translateX(${this.translate}px) scale(${this.scale})`;
       let zIndex = 0;
       if (this.active) {
         zIndex = 4;
@@ -33,7 +41,14 @@ export default {
         zIndex = 0;
       }
       const style = {
-        transform: value,
+        width: this.$parent.type === "card" ? "50%" : "100%",
+        transform: `translateX(${this.translate}px) scale(${this.scale})`,
+        cursor:
+          this.$parent.type === "card"
+            ? this.inStage
+              ? "pointer"
+              : "default"
+            : "",
         zIndex,
       };
       return style;
@@ -64,16 +79,35 @@ export default {
         return ((3 + CARD_SCALE) * parentWidth) / 4;
       }
     },
+    calcTranslate(index, activeIndex) {
+      const distance = this.$parent.$el.offsetWidth;
+      return distance * (index - activeIndex);
+    },
     translateItem(index, activeIndex) {
+      const parentType = this.$parent.type;
       const length = this.$parent.items.length;
       if (index !== activeIndex && length > 2) {
         index = this.processIndex(index, activeIndex, length);
       }
-      this.inStage = Math.round(Math.abs(index - activeIndex)) <= 1;
-      this.active = index === activeIndex;
-      this.translate = this.calcCardTranslate(index, activeIndex);
-      this.scale = this.active ? 1 : CARD_SCALE;
+      if (parentType === "card") {
+        this.active = index === activeIndex;
+        this.inStage = Math.round(Math.abs(index - activeIndex)) <= 1;
+        this.translate = this.calcCardTranslate(index, activeIndex);
+        this.scale = this.active ? 1 : CARD_SCALE;
+      } else {
+        this.active = index === activeIndex;
+        this.translate = this.calcTranslate(index, activeIndex);
+        this.scale = 1;
+      }
       this.ready = true;
+    },
+    handleItemClick() {
+      const parent = this.$parent;
+      if (parent && parent.type === "card") {
+        const index = parent.items.indexOf(this);
+        parent.setActiveIndex(index);
+        parent.resetTimer();
+      }
     },
   },
   destroyed() {
@@ -84,23 +118,25 @@ export default {
 
 <style lang="scss" scoped>
 .ay-carousel__item {
-  transition: 0.3s;
-  text-align: center;
-  width: 50%;
-  height: 100%;
   position: absolute;
   top: 0;
   left: 0;
-  display: inline-block;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
+  transition: transform 0.5s ease-in-out;
   z-index: 0;
-  &__mask {
+  &-mask {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     background-color: $white;
     opacity: 0.24;
-    transition: 0.3s;
+    transition: transform 0.4s ease-in-out;
   }
 }
 </style>

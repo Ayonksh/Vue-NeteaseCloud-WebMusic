@@ -1,8 +1,6 @@
 <template>
   <div class="setting">
-    <div class="img-wrap">
-      <img :src="require('@/assets/head/setting.png')" />
-    </div>
+    <ay-svg-icon class="icon" icon="settings" />
   </div>
 </template>
 
@@ -17,15 +15,11 @@ export default {
 .setting {
   height: 100%;
   display: flex;
+  justify-content: center;
   align-items: center;
-  .img-wrap {
-    display: flex;
-    align-items: center;
+  .icon {
+    font-size: 24px;
     cursor: pointer;
-    img {
-      width: 24px;
-      height: 24px;
-    }
   }
 }
 </style>

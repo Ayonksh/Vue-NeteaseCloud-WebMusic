@@ -1,20 +1,22 @@
 <template>
-  <div class="ay-select-wrap">
+  <div class="ay-select">
     <ay-popover
-      :show="show"
-      :wrapStyle="popoverStyle"
-      trigger="manual"
+      trigger="click"
       :placement="placement"
+      :width="popoverWidth"
+      ref="popover"
     >
       <div
-        class="input-wrap"
+        class="ay-select__body"
         @mouseenter="hovering = true"
         @mouseleave="hovering = false"
       >
         <input
-          ref="input"
+          class="ay-select__input"
           :style="inputStyle"
+          ref="input"
           :value="selected"
+          type="text"
           :placeholder="
             checkedIdx !== null
               ? list[checkedIdx] && list[checkedIdx][labelName]
@@ -22,53 +24,48 @@
               ? ''
               : placeholder
           "
-          type="text"
+          :disabled="disabled"
           readonly
           @focus="handleFocus"
           @blur="handleBlur"
         />
-        <div class="img-wrap">
-          <img
-            v-if="!show && !showClear"
-            :src="require('@/assets/icon/arrow-down.png')"
-            @mousedown.prevent
-            @click="dropdown"
+        <div class="ay-select__suffix" :style="suffixStyle">
+          <ay-svg-icon
+            v-show="!showClear"
+            :class="['icon', showPopover ? 'reverse' : '']"
+            icon="arrow-down"
           />
-          <img
-            v-if="show && !showClear"
-            :src="require('@/assets/icon/arrow-up.png')"
-            @mousedown.prevent
-            @click="pullup"
-          />
-          <img
+          <ay-svg-icon
             v-if="showClear"
-            :src="require('@/assets/icon/close.png')"
-            @mousedown.prevent
-            @click.stop="clearAll"
+            class="icon"
+            icon="close"
+            @click="clear"
           />
         </div>
-        <div ref="checkList" class="mul-check-wrap">
+        <div class="ay-select__tags" ref="checkList">
           <div
-            class="check-item"
+            class="ay-select__tags-item"
+            :style="tagStyle"
             v-for="checkedIdx in checkedList"
             :key="checkedIdx"
           >
-            <div>
+            <span>
               {{ list[checkedIdx] && list[checkedIdx][labelName] }}
-            </div>
-            <div
-              class="mul-check-close-wrap"
-              @click.stop="clearTargetIdx(checkedIdx)"
-            >
-              <img :src="require('@/assets/icon/close-2.png')" />
+            </span>
+            <div class="icon-wrapper">
+              <ay-svg-icon
+                class="icon"
+                icon="close2"
+                @click="clearTargetIdx(checkedIdx)"
+              />
             </div>
           </div>
         </div>
       </div>
       <template slot="content">
-        <div ref="list" class="list-wrap">
+        <div class="ay-select-dropdown__list" ref="list">
           <div
-            class="item"
+            class="ay-select-dropdown__list-item"
             :class="[
               !multiple &&
               list[checkedIdx] &&
@@ -79,7 +76,8 @@
             ]"
             v-for="(item, idx) in list"
             :key="item[valueName]"
-            @mousedown="handleCheck($event, item, idx)"
+            @click="handleCheck($event, item, idx)"
+            @mousedown.prevent
           >
             <slot name="data" :item="item">
               {{ item[labelName] }}
@@ -92,12 +90,28 @@
 </template>
 
 <script>
+import AyPopover from "../AyPopover/popover.vue";
+
 const SM_MIN_INPUT_HEIGHT = 32;
 const MD_MIN_INPUT_HEIGHT = 36;
 const LG_MIN_INPUT_HEIGHT = 40;
-const INPUT_PADDING_TOP = 2;
-const INPUT_PADDING_BOTTOM = 2;
-import AyPopover from "../AyPopover/popover.vue";
+const INPUT_HEIGHT_MAP = {
+  sm: SM_MIN_INPUT_HEIGHT,
+  md: MD_MIN_INPUT_HEIGHT,
+  lg: LG_MIN_INPUT_HEIGHT,
+};
+const INPUT_PADDING_TopBottom = 2;
+const INPUT_PADDING_MAP = {
+  sm: INPUT_PADDING_TopBottom,
+  md: INPUT_PADDING_TopBottom * 1.5,
+  lg: INPUT_PADDING_TopBottom * 2,
+};
+const TAG_HEIGHT_MAP = {
+  sm: SM_MIN_INPUT_HEIGHT - 16,
+  md: MD_MIN_INPUT_HEIGHT - 16,
+  lg: LG_MIN_INPUT_HEIGHT - 16,
+};
+
 export default {
   name: "AySelect",
   components: { AyPopover },
@@ -106,12 +120,12 @@ export default {
     event: "selectedChange",
   },
   props: {
-    popoverWidth: {
-      type: String,
-    },
     placement: {
       type: String,
       default: "bottom",
+    },
+    popoverWidth: {
+      type: String,
     },
     size: {
       type: String,
@@ -122,28 +136,32 @@ export default {
       type: String,
       default: "80px",
     },
-    // item 名称
-    labelName: {
-      type: String,
-      default: "label",
-    },
-    // item 值
-    valueName: {
-      type: String,
-      default: "value",
-    },
     placeholder: {
       type: String,
       default: "请选择",
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    // 下拉框列表
     list: {
       type: Array,
       required: true,
     },
+    // 下拉框 item 名称
+    labelName: {
+      type: String,
+      default: "label",
+    },
+    // 下拉框 item 值
+    valueName: {
+      type: String,
+      default: "value",
+    },
     defaultIdx: {
       default: null,
     },
-    // 多选
     multiple: {
       type: Boolean,
       default: false,
@@ -155,43 +173,47 @@ export default {
   },
   data() {
     return {
-      popoverStyle: {
-        width: this.popoverWidth,
-      },
-      show: false,
+      inputHeight: INPUT_HEIGHT_MAP[this.size],
+      inputPadding: INPUT_PADDING_MAP[this.size],
+      tagHeight: TAG_HEIGHT_MAP[this.size],
+      initPopover: false,
       focused: false,
       hovering: false,
-      height: MD_MIN_INPUT_HEIGHT,
       checkedIdx: this.defaultIdx,
       checkedList: [],
     };
   },
   mounted() {
     if (!this.popoverWidth) {
-      this.popoverStyle.width = this.width; // 以输入框宽度为选择器列表宽度
+      this.popoverWidth = this.width || this.$refs.input.width; // 以 input 宽度为 popover 宽度
     }
-    this.$emit("selectedChange", this.selected);
+    this.initPopover = true; // popover 的 dom 结构挂载完毕，值设为 true
   },
   computed: {
-    inputHeight() {
-      const map = {
-        sm: SM_MIN_INPUT_HEIGHT,
-        md: MD_MIN_INPUT_HEIGHT,
-        lg: LG_MIN_INPUT_HEIGHT,
-      };
-      return map[this.size];
-    },
     inputStyle() {
-      const { inputHeight } = this;
-      let border;
+      const { inputHeight, inputPadding } = this;
+      let borderColor;
       if (this.isFocus) {
-        border = "1px solid #409eff";
+        borderColor = "$blue-light";
       }
       return {
         width: this.width,
         height: `${inputHeight}px`,
-        padding: `${INPUT_PADDING_TOP}px 22px ${INPUT_PADDING_BOTTOM}px 12px`, // 输入框右边有图片，所以设置为 22px
-        border: border,
+        padding: `${inputPadding}px 22px ${inputPadding}px 12px`, // 输入框右边有图标，所以设置为 22px
+        borderColor: borderColor,
+      };
+    },
+    suffixStyle() {
+      const { inputHeight } = this;
+      return {
+        height: `${inputHeight}px`,
+      };
+    },
+    tagStyle() {
+      const { tagHeight, inputPadding } = this;
+      return {
+        height: `${tagHeight}px`,
+        padding: `${inputPadding}px 22px ${inputPadding}px 8px`, // 输入框右边有图标，所以设置为 22px
       };
     },
     selected() {
@@ -201,7 +223,14 @@ export default {
         : "";
     },
     isFocus() {
-      return (this.hasValue || this.show) && this.focused;
+      return (this.hasValue || this.showPopover) && this.focused;
+    },
+    showPopover() {
+      if (this.initPopover == false) {
+        return false; // popover 的 dom 结构还没有挂载，返回 false
+      } else {
+        return this.$refs.popover.showPopover;
+      }
     },
     showClear() {
       return this.clearable && this.hovering && this.hasValue;
@@ -215,14 +244,6 @@ export default {
     },
   },
   watch: {
-    multiple(multiple) {
-      if (multiple) {
-        this.checkedIdx = null;
-      } else {
-        this.checkedList = [];
-        this.height = MD_MIN_INPUT_HEIGHT;
-      }
-    },
     checkedIdx(idx) {
       this.$emit("dataChange", idx);
     },
@@ -233,187 +254,158 @@ export default {
       },
       deep: true,
     },
-    height() {
-      this.resetPopoverPosition();
+    inputHeight() {
+      this.$nextTick(this.$refs.popover.setPopoverPosition);
     },
   },
   methods: {
     handleFocus() {
-      this.show = true;
       this.focused = true;
       this.$emit("focus");
     },
     handleBlur() {
-      this.show = false;
       this.focused = false;
       this.$emit("blur");
     },
-    dropdown() {
-      this.show = true;
-      this.$refs.input.focus(); // 使输入框获取焦点
-      this.focused = true;
-    },
-    pullup() {
-      this.show = false;
-      this.focused = false;
-    },
     handleCheck(e, item, idx) {
+      // @mousedown.prevent 使下拉框选择数据之后，input 不会失焦
       if (!this.multiple) {
         this.checkedIdx = idx;
         this.$emit("selectedChange", item.code);
-        this.show = false;
+        // this.$refs.input.focus(); // 使输入框获取焦点
       } else {
-        e.preventDefault(); // 多选情况下阻止 input 失焦，使列表不关闭
+        e.stopPropagation(); // 多选情况下阻止弹出框消失
         const idxInList = this.checkedList.indexOf(idx);
         idxInList > -1
           ? this.checkedList.splice(idxInList, 1)
           : this.checkedList.push(idx);
       }
     },
-    resetInputHeight() {
-      const [{ offsetHeight }, offset] = [
-        this.$refs.checkList,
-        INPUT_PADDING_TOP * 2,
-      ];
-      // offsetHeight > MD_INPUT_MIN_HEIGHT - offset &&
-      //   (this.height = offsetHeight + offset);
-      if (offsetHeight > MD_MIN_INPUT_HEIGHT - offset) {
-        this.height = offsetHeight + offset;
-      } else {
-        this.height = MD_MIN_INPUT_HEIGHT;
-      }
-    },
-    resetPopoverPosition() {
-      this.show = false;
-      setTimeout(() => {
-        this.show = true;
-      }, 250); // 多次试验将值定为 250 ，可能不同电脑的最优更新时隙不一样
-    },
-    clearAll() {
+    clear() {
       if (!this.multiple) {
         this.checkedIdx = null;
       } else {
         this.checkedList = [];
-        this.height = MD_MIN_INPUT_HEIGHT;
+        this.inputHeight = INPUT_HEIGHT_MAP[this.size];
       }
-      this.show = false;
       this.$emit("clear");
     },
     clearTargetIdx(target) {
       const idxInList = this.checkedList.indexOf(target);
       this.checkedList.splice(idxInList, 1);
     },
+    resetInputHeight() {
+      const [{ offsetHeight }, offset] = [
+        this.$refs.checkList,
+        this.inputPadding * 2,
+      ];
+      offsetHeight >= INPUT_HEIGHT_MAP[this.size] - offset &&
+        (this.inputHeight = offsetHeight + offset);
+    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.ay-select-wrap {
-  .input-wrap {
+.ay-select {
+  .ay-select__body {
     min-width: 80px;
     width: 100%;
     position: relative;
-    input {
+    .ay-select__input {
       width: 100%;
       border: 1px solid #dcdfe6;
       border-radius: 5px;
+      transition: 0.5s;
       box-sizing: border-box;
-      transition: 0.3s;
       @include text-ellipsis;
+      &:hover {
+        border-color: $grey-dark;
+      }
       &:focus {
         outline: none;
-        border: 1px solid #409eff;
-      }
-      &:hover {
-        border: 1px solid $grey-dark;
+        border-color: $blue-light;
       }
     }
-    .img-wrap {
+    .ay-select__suffix {
       position: absolute;
+      right: 0;
       top: 50%;
       transform: translateY(-50%);
-      right: 6px;
-      height: 36px;
+      padding: 0 6px;
       z-index: 20;
-      opacity: 0.5;
-      transition: 0.3s;
       display: flex;
+      justify-content: center;
       align-items: center;
-      cursor: pointer;
-      img {
-        width: 16px;
-        height: 16px;
+      .icon {
+        font-size: 16px;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: 0.5s;
+      }
+      .reverse {
+        transform: rotate(180deg);
       }
     }
-    .mul-check-wrap {
+    .ay-select__tags {
       position: absolute;
       left: 0;
       top: 50%;
       transform: translateY(-50%);
-      margin: 0 25px 0 4px;
-      line-height: 18px;
+      width: 100%;
+      padding: 2px;
       display: flex;
       justify-content: flex-start;
       align-items: center;
       flex-wrap: wrap;
       pointer-events: none;
-      .check-item {
+      .ay-select__tags-item {
         position: relative;
-        height: 20px;
-        padding: 4px 20px 4px 8px;
-        margin: 2px;
         font-size: 12px;
+        margin: 2px;
         color: #909399;
         background-color: #f4f4f5;
-        border: 1px solid #dcdfe6;
+        border: 1px solid #e9e9eb;
         border-radius: 3px;
         display: flex;
         justify-content: center;
         align-items: center;
-        .mul-check-close-wrap {
+        .icon-wrapper {
           position: absolute;
           top: 50%;
           transform: translateY(-50%);
           right: 4px;
           height: 100%;
-          @include circle(13px);
+          @include circle(12px);
           background-color: #c0c4cc;
-          cursor: pointer;
           pointer-events: auto;
-          img {
-            width: 13px;
-            height: 13px;
+          .icon {
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.5;
           }
         }
       }
     }
-    // &::before {
-    //   content: "";
-    //   position: absolute;
-    //   top: -1px;
-    //   right: -1px;
-    //   bottom: -1px;
-    //   left: -1px;
-    // }
     &:hover {
-      .img-wrap {
+      .icon {
         opacity: 1;
       }
     }
   }
 }
-.list-wrap {
+.ay-select-dropdown__list {
   max-height: 300px;
   overflow-y: auto;
-  .item {
+  .ay-select-dropdown__list-item {
     width: 100%;
     height: 36px;
     line-height: 36px;
     padding: 0 18px;
+    transition: 0.5s;
     cursor: pointer;
-    transition: 0.3s;
     &.checked {
-      color: #409eff;
+      color: $blue-light;
       font-weight: bold;
     }
     &:hover {

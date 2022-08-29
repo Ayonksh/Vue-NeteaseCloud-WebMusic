@@ -2,26 +2,30 @@ import Vue from "vue";
 import Component from "./notification.vue";
 const NotificationConstructor = Vue.extend(Component);
 
+const MARGING = 16; // 间隔
+
+let seed = 1;
 let instance;
 let instances = [];
-let seed = 1;
-
-const MARGING = 16; // 间隔
 
 const Notification = (options) => {
   const id = "ay_notification_" + seed++;
   const position = options.position || "top-right";
+
   options.onClose = function () {
     Notification.close(id);
   };
+
   instance = new NotificationConstructor({
     data: options,
   });
+
   instance.id = id;
   instance.visible = true;
   instance.$mount();
   document.body.appendChild(instance.$el);
   instance.dom = instance.$el;
+
   let verticalOffset = options.offset || 0;
   instances
     .filter((item) => item.position === position)

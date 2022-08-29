@@ -1,13 +1,13 @@
 <template>
   <ay-popover
     class="message"
-    :closeDelay="200"
-    :wrapStyle="popoverStyle"
-    trigger="click"
+    trigger="manual"
     placement="bottom"
+    :closeDelay="200"
+    :customStyle="popoverStyle"
   >
-    <div class="img-wrap">
-      <img :src="require('@/assets/head/message.png')" />
+    <div class="icon-wrapper">
+      <ay-svg-icon class="icon" icon="message" />
     </div>
     <template slot="content">
       <div class="message-list">
@@ -64,7 +64,6 @@ export default {
     return {
       popoverStyle: {
         width: "320px",
-        margin: "0",
       },
       activeName: "私信",
       privates: [],
@@ -99,13 +98,13 @@ export default {
   height: 100%;
   display: flex;
   align-items: center;
-  .img-wrap {
+  .icon-wrapper {
     display: flex;
+    justify-content: center;
     align-items: center;
-    cursor: pointer;
-    img {
-      width: 24px;
-      height: 24px;
+    .icon {
+      font-size: 24px;
+      cursor: pointer;
     }
   }
 }

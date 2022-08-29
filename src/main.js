@@ -3,10 +3,11 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 
+import "@/style/index.scss";
+import "@/base/AySvgIcon/index.js";
+
 import { init } from "@/utils";
 init();
-
-import "@/style/index.scss";
 
 import VueMeta from "vue-meta";
 Vue.use(VueMeta, {

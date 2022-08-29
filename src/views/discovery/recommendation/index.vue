@@ -1,19 +1,19 @@
 <template>
   <div>
-    <ay-loading class="loader-wrap" :loading="loading">
-      <ay-carousel>
+    <ay-loading :loading="loading">
+      <ay-carousel height="200px" type="card">
         <ay-carousel-item v-for="banner in banners" :key="banner.imageUrl">
           <div class="banner">
             <img
               class="banner-img"
               v-lazy="getImgUrl(banner.imageUrl, 1000, 400)"
             />
-            <div
+            <span
               class="banner-title"
               :style="{ 'background-color': banner.titleColor }"
             >
               {{ banner.typeTitle }}
-            </div>
+            </span>
           </div>
         </ay-carousel-item>
       </ay-carousel>
@@ -117,29 +117,26 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.loader-wrap {
-  margin-bottom: 40px;
-  .banner {
-    position: fixed; // 固定 banner-title
-    .banner-img {
-      width: 100%;
-      max-width: 500px;
-      height: 100%;
-      border-radius: 10px;
-    }
-    .banner-title {
-      position: absolute;
-      padding: 4px 10px;
-      right: 0;
-      bottom: 4px;
-      border-radius: 10px 0 10px 0;
-      color: $white;
-      font-size: $font-size;
-      font-weight: 400;
-      text-align: center;
-    }
+.banner {
+  position: relative; // 固定 banner-title
+  height: 100%;
+  .banner-img {
+    height: 100%;
+    border-radius: 10px;
+  }
+  .banner-title {
+    position: absolute;
+    right: 0;
+    bottom: 0px;
+    padding: 4px 10px;
+    border-radius: 10px 0 10px 0;
+    color: $white;
+    font-size: $font-size;
+    font-weight: 400;
+    text-align: center;
   }
 }
+
 .card-wrap {
   margin: 30px 0;
   .card-title {

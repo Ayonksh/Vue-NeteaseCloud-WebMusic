@@ -1,38 +1,35 @@
 <template>
   <transition name="ay-notification-fade">
     <div
-      :class="[prefixClass, `${prefixClass}__${horizontalClass}`]"
-      v-if="visible"
+      :class="['ay-notification', `ay-notification--${horizontalClass}`]"
       :style="positiveStyle"
-      @mouseenter="clearTimer()"
-      @mouseleave="startTime()"
+      v-if="visible"
+      @mouseenter="clearTimer"
+      @mouseleave="startTimer"
     >
-      <div :class="`${prefixClass}-header`">
-        <h1 class="title">{{ title }}</h1>
-        <div class="close" @click.stop="handleClose">
-          <img :src="require('@/assets/icon/close.png')" />
-        </div>
+      <div class="ay-notification__header">
+        <h1 class="ay-notification__title">{{ title }}</h1>
+        <ay-svg-icon class="close" icon="close" @click.stop="handleClose" />
       </div>
-      <div :class="`${prefixClass}-content`" v-if="message">
-        <span>{{ message }}</span>
+      <div class="ay-notification__content" v-if="message">
+        {{ message }}
       </div>
     </div>
   </transition>
 </template>
 
 <script>
-const prefixClass = "ay-notification";
 export default {
   name: "AyNotification",
   data() {
     return {
-      prefixClass,
+      visible: false,
       title: "",
       message: "",
-      duration: 3000,
-      visible: false,
-      verticalOffset: 0,
+      duration: 4000,
       position: "top-right",
+      verticalOffset: 0,
+      closed: false,
       onClose: () => {},
       timer: null,
     };
@@ -52,11 +49,13 @@ export default {
   },
   mounted() {
     this.startTimer();
+    document.addEventListener("keydown", this.keydown);
   },
   methods: {
     handleClose() {
       this.onClose();
       this.visible = false;
+      this.closed = true;
     },
     clearTimer() {
       clearTimeout(this.timer);
@@ -70,49 +69,62 @@ export default {
         }, this.duration);
       }
     },
+    keydown(e) {
+      if (e.keyCode === 46 || e.keyCode === 8) {
+        this.clearTimer(); // detele 取消倒计时
+      } else if (e.keyCode === 27) {
+        // esc关闭消息
+        if (!this.closed) {
+          this.handleClose();
+        }
+      } else {
+        this.startTimer(); // 恢复倒计时
+      }
+    },
+    beforeDestroy() {
+      document.removeEventListener("keydown", this.keydown);
+    },
   },
 };
 </script>
 
 <style lang="scss" scoped>
 .ay-notification {
-  @include box-shadow;
-  clear: both;
-  position: fixed;
-  width: $notification-width;
-  padding: $notification-padding;
-  border-radius: 8px;
+  width: 250px;
+  padding: 14px 20px;
+  border-radius: 10px;
   background-color: $white;
-  transition: 0.3s;
+  font-size: $font-size;
+  transition: 0.8s;
   overflow: hidden;
   z-index: $notification-index;
-  font-size: $font-size;
-  &__left {
+  position: fixed;
+  @include box-shadow;
+  &--left {
     left: 16px;
   }
-  &__right {
+  &--right {
     right: 16px;
   }
-  .ay-notification-header {
+  .ay-notification__header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    .title {
+    .ay-notification__title {
       width: 80%;
+      font-size: 18px;
+      font-weight: bold;
       @include text-ellipsis;
     }
     .close {
-      width: 20%;
+      font-size: 16px;
       cursor: pointer;
-      img {
-        float: right;
-        width: 16px;
-        height: 16px;
-      }
     }
   }
-  .ay-notification-content {
+  .ay-notification__content {
     margin-top: 12px;
+    font-size: 15px;
+    font-weight: 500;
   }
 }
 </style>

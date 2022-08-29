@@ -1,8 +1,6 @@
 <template>
   <div class="github">
-    <div class="img-wrap" @click="openGithub()">
-      <img :src="require('@/assets/head/github.png')" />
-    </div>
+    <ay-svg-icon class="icon" icon="github" @click.stop="openGithub" />
   </div>
 </template>
 
@@ -21,15 +19,11 @@ export default {
 .github {
   height: 100%;
   display: flex;
+  justify-content: center;
   align-items: center;
-  .img-wrap {
-    display: flex;
-    align-items: center;
+  .icon {
+    font-size: 24px;
     cursor: pointer;
-    img {
-      width: 24px;
-      height: 24px;
-    }
   }
 }
 </style>

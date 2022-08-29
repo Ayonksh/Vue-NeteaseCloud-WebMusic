@@ -1,23 +1,15 @@
 <template>
-  <ay-popover
-    class="search"
-    :show="show"
-    :wrapStyle="{ width: '360px' }"
-    trigger="manual"
-    placement="bottom"
-  >
+  <ay-popover class="search" trigger="click" placement="bottom" width="360px">
     <ay-input
       class="input"
       v-model="keywords"
       size="sm"
-      :wrapStyle="{ borderRadius: '15px' }"
+      :customStyle="{ borderRadius: '15px' }"
       :placeholder="showKeyword"
-      @focus="handleFocus"
-      @blur="handleBlur"
-      @keyup.enter.native="handleSearch()"
+      @keyup.enter.native="handleSearch"
     >
       <template slot="prefix">
-        <div class="img-wrap" @click="handleSearch()">
+        <div class="img-wrap" @click="handleSearch">
           <img :src="require('@/assets/search/search.png')" />
         </div>
       </template>
@@ -154,7 +146,7 @@
                 class="list-item"
                 v-for="(item, index) in hots"
                 :key="item.searchWord"
-                @click.stop="handleSearch(item.searchWord)"
+                @click="handleSearch(item.searchWord)"
               >
                 <div
                   class="item-index"
@@ -205,7 +197,6 @@ export default {
   components: { AyInput, AyPopover },
   data() {
     return {
-      show: false,
       realKeyword: "",
       keywords: "",
       showKeyword: DEFAULT_KEY_WORD,
@@ -237,12 +228,6 @@ export default {
   methods: {
     getArtistsText,
     brightenKeyword,
-    handleFocus() {
-      this.show = true;
-    },
-    handleBlur() {
-      this.show = false;
-    },
     handleSetCurrentSong(song) {
       this.setCurrentSong(
         formatSong({

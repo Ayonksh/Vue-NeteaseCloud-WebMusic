@@ -1,7 +1,7 @@
 <template>
-  <ay-popover class="theme" trigger="click" placement="bottom-end">
-    <div class="img-wrap">
-      <img :src="require('@/assets/head/skin.png')" />
+  <ay-popover class="theme" trigger="hover" placement="bottom-end">
+    <div class="icon-wrapper">
+      <ay-svg-icon class="icon" icon="skin" />
     </div>
     <template slot="content">
       <ul class="list">
@@ -32,13 +32,13 @@ export default {
   height: 100%;
   display: flex;
   align-items: center;
-  .img-wrap {
+  .icon-wrapper {
     display: flex;
+    justify-content: center;
     align-items: center;
-    cursor: pointer;
-    img {
-      width: 24px;
-      height: 24px;
+    .icon {
+      font-size: 24px;
+      cursor: pointer;
     }
   }
 }

@@ -1,23 +1,22 @@
 <template>
-  <div class="ay-popover-wrap">
-    <transition name="fade">
+  <div class="ay-popover">
+    <transition name="ay-fade-in">
       <div
+        v-if="initPopover"
+        v-show="showPopover"
+        class="ay-popover__body"
+        :class="`ay-popover__body--${placement}`"
+        :style="[popoverStyle, customStyle]"
         ref="popover"
-        class="ay-popover"
-        :class="`ay-popover__${placement}`"
-        :style="wrapStyle"
-        v-show="showPopover || (show && isManual)"
       >
-        <div class="ay-popover-content">
-          <slot name="content"></slot>
-          <div
-            ref="arrow"
-            :class="['ay-popover-arrow', `ay-popover-arrow__${placement}`]"
-          ></div>
-        </div>
+        <slot name="content"></slot>
+        <div
+          :class="['ay-popover__arrow', `ay-popover__arrow--${placement}`]"
+          ref="arrow"
+        ></div>
       </div>
     </transition>
-    <div class="trigger" ref="trigger">
+    <div class="ay-popover__trigger" ref="trigger">
       <slot></slot>
     </div>
   </div>
@@ -25,29 +24,10 @@
 
 <script>
 import { on, off } from "@/utils/dom";
-const positionList = [
-  "top",
-  "top-start",
-  "top-end",
-  "bottom",
-  "bottom-start",
-  "bottom-end",
-  "left",
-  "left-start",
-  "left-end",
-  "right",
-  "right-start",
-  "right-end",
-];
 
 export default {
   name: "AyPopover",
   props: {
-    show: {
-      type: Boolean,
-      default: false,
-    },
-    wrapStyle: Object,
     // 触发方式
     trigger: {
       type: String,
@@ -58,7 +38,12 @@ export default {
     placement: {
       type: String,
       default: "bottom",
-      validator: (value) => positionList.indexOf(value) > -1,
+      validator: (value) =>
+        /^(top|bottom|left|right)(-start|-end)?$/g.test(value) != false,
+    },
+    width: {
+      type: String,
+      default: "150px",
     },
     // 打开延迟
     openDelay: {
@@ -70,48 +55,62 @@ export default {
       type: Number,
       default: 400,
     },
+    customStyle: Object,
   },
   data() {
     return {
+      initPopover: false,
       showPopover: false,
     };
   },
   mounted() {
-    if (!this.isManual) this.createPopover();
+    let { trigger } = this.$refs;
+    switch (this.trigger) {
+      case "click": {
+        on(trigger, "click", this.doToggle);
+        on(document, "click", this.handleDocumentClick);
+        break;
+      }
+      case "hover": {
+        on(trigger, "mouseenter", this.handleMouseEnter);
+        on(trigger, "mouseleave", this.handleMouseLeave);
+        break;
+      }
+      case "manual": {
+        on(trigger, "click", this.doToggle);
+        break;
+      }
+    }
   },
   computed: {
-    isManual() {
-      return this.trigger === "manual";
+    popoverStyle() {
+      const { width } = this;
+      return {
+        width: width,
+      };
     },
   },
   watch: {
-    show(show) {
-      if (show && this.isManual) this.$nextTick(() => this.placementContent());
+    initPopover() {
+      this.$nextTick(this.createPopover);
+    },
+    showPopover(val) {
+      val ? this.$emit("show") : this.$emit("hide");
+      this.$nextTick(this.setPopoverPosition);
     },
   },
   methods: {
     createPopover() {
-      let { popover, trigger } = this.$refs;
-      if (!popover) return;
-      this.placementContent();
-      switch (this.trigger) {
-        case "click": {
-          on(trigger, "click", this.doToggle);
-          on(document, "click", this.handleDocumentClick);
-          break;
-        }
-        case "hover": {
-          on(trigger, "mouseenter", this.handleMouseEnter);
-          on(popover, "mouseenter", this.handleMouseEnter);
-          on(trigger, "mouseleave", this.handleMouseLeave);
-          on(popover, "mouseleave", this.handleMouseLeave);
-          break;
-        }
+      let { popover } = this.$refs;
+      if (this.trigger === "hover") {
+        on(popover, "mouseenter", this.handleMouseEnter);
+        on(popover, "mouseleave", this.handleMouseLeave);
       }
-    },
-    placementContent() {
-      const { popover, trigger, arrow } = this.$refs;
       document.body.appendChild(popover);
+      this.setPopoverPosition();
+    },
+    setPopoverPosition() {
+      let { popover, trigger, arrow } = this.$refs;
       const {
         width: triggerWidth,
         height: triggerHeight,
@@ -120,6 +119,7 @@ export default {
       } = trigger.getBoundingClientRect();
       const { width: contentWidth, height: contentHeight } =
         popover.getBoundingClientRect();
+
       const fixed = 10;
       let style = {};
       switch (this.placement) {
@@ -260,17 +260,22 @@ export default {
       popover.style.top = `${style.top}px`;
     },
     doToggle() {
-      this.showPopover ? this.doClose() : this.doOpen();
+      if (this.initPopover == false) {
+        this.initPopover = true;
+        this.showPopover = true;
+      } else {
+        this.showPopover = !this.showPopover;
+      }
     },
     doOpen() {
       this.showPopover = true;
-      this.$nextTick(this.createPopover);
     },
     doClose() {
       this.showPopover = false;
     },
     handleMouseEnter() {
       clearTimeout(this._timer);
+      this.initPopover = true;
       if (this.openDelay) {
         this._timer = setTimeout(() => {
           this.doOpen();
@@ -290,20 +295,18 @@ export default {
       }
     },
     handleDocumentClick(e) {
-      let { popover, trigger } = this.$refs;
+      let { trigger } = this.$refs;
       if (
         !this.$el ||
-        !trigger ||
         this.$el.contains(e.target) ||
-        trigger.contains(e.target) ||
-        !popover ||
-        popover.contains(e.target)
+        !trigger ||
+        trigger.contains(e.target)
       )
         return;
-      this.showpopover = false;
+      this.showPopover = false;
     },
     destroyPopover() {
-      const { trigger, popover } = this.$refs;
+      let { trigger, popover } = this.$refs;
       switch (this.trigger) {
         case "click": {
           off(trigger, "click", this.doToggle);
@@ -317,20 +320,31 @@ export default {
           off(popover, "mouseleave", this.handleMouseLeave);
           break;
         }
+        case "manual": {
+          off(trigger, "click", this.doToggle);
+          break;
+        }
+      }
+      if (document.body.contains(popover)) {
+        document.body.removeChild(popover);
       }
     },
+  },
+  // call destroy in keep-alive mode
+  deactivated() {
+    this.destroyPopover();
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.ay-popover-wrap {
+.ay-popover {
   position: relative;
-  .trigger {
+  .ay-popover__trigger {
     cursor: pointer;
   }
 }
-.ay-popover {
+.ay-popover__body {
   position: absolute;
   padding: 6px;
   border: 1px solid $grey;
@@ -338,108 +352,106 @@ export default {
   background-color: $white;
   @include box-shadow;
   z-index: $popover-index;
-  .ay-popover-content {
-    .ay-popover-arrow {
-      width: 0;
-      height: 0;
-      border: 6px solid transparent;
-      position: absolute;
-      &__top {
-        bottom: -6px;
-        border-bottom: 0;
-        border-top-color: $white;
-      }
-      &__top-start {
-        bottom: -6px;
-        border-bottom: 0;
-        border-top-color: $white;
-      }
-      &__top-end {
-        bottom: -6px;
-        border-bottom: 0;
-        border-top-color: $white;
-      }
-      &__right {
-        left: -6px;
-        border-left: 0;
-        border-right-color: $white;
-      }
-      &__right-start {
-        left: -6px;
-        border-left: 0;
-        border-right-color: $white;
-      }
-      &__right-end {
-        left: -6px;
-        border-left: 0;
-        border-right-color: $white;
-      }
-      &__bottom {
-        top: -6px;
-        border-top: 0;
-        border-bottom-color: $white;
-      }
-      &__bottom-start {
-        top: -6px;
-        border-top: 0;
-        border-bottom-color: $white;
-      }
-      &__bottom-end {
-        top: -6px;
-        border-top: 0;
-        border-bottom-color: $white;
-      }
-      &__left {
-        right: -6px;
-        border-right: 0;
-        border-left-color: $white;
-      }
-      &__left-start {
-        right: -6px;
-        border-right: 0;
-        border-left-color: $white;
-      }
-      &__left-end {
-        right: -6px;
-        border-right: 0;
-        border-left-color: $white;
-      }
+  .ay-popover__arrow {
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    position: absolute;
+    &--top {
+      bottom: -6px;
+      border-bottom: 0;
+      border-top-color: $white;
+    }
+    &--top-start {
+      bottom: -6px;
+      border-bottom: 0;
+      border-top-color: $white;
+    }
+    &--top-end {
+      bottom: -6px;
+      border-bottom: 0;
+      border-top-color: $white;
+    }
+    &--right {
+      left: -6px;
+      border-left: 0;
+      border-right-color: $white;
+    }
+    &--right-start {
+      left: -6px;
+      border-left: 0;
+      border-right-color: $white;
+    }
+    &--right-end {
+      left: -6px;
+      border-left: 0;
+      border-right-color: $white;
+    }
+    &--bottom {
+      top: -6px;
+      border-top: 0;
+      border-bottom-color: $white;
+    }
+    &--bottom-start {
+      top: -6px;
+      border-top: 0;
+      border-bottom-color: $white;
+    }
+    &--bottom-end {
+      top: -6px;
+      border-top: 0;
+      border-bottom-color: $white;
+    }
+    &--left {
+      right: -6px;
+      border-right: 0;
+      border-left-color: $white;
+    }
+    &--left-start {
+      right: -6px;
+      border-right: 0;
+      border-left-color: $white;
+    }
+    &--left-end {
+      right: -6px;
+      border-right: 0;
+      border-left-color: $white;
     }
   }
-  &__top {
+  &--top {
     margin-bottom: 6px;
   }
-  &__top-start {
+  &--top-start {
     margin-bottom: 6px;
   }
-  &__top-end {
+  &--top-end {
     margin-bottom: 6px;
   }
-  &__right {
+  &--right {
     margin-left: 6px;
   }
-  &__right-start {
+  &--right-start {
     margin-left: 6px;
   }
-  &__right-end {
+  &--right-end {
     margin-left: 6px;
   }
-  &__bottom {
+  &--bottom {
     margin-top: 6px;
   }
-  &__bottom-start {
+  &--bottom-start {
     margin-top: 6px;
   }
-  &__bottom-end {
+  &--bottom-end {
     margin-top: 6px;
   }
-  &__left {
+  &--left {
     margin-right: 6px;
   }
-  &__left-start {
+  &--left-start {
     margin-right: 6px;
   }
-  &__left-end {
+  &--left-end {
     margin-right: 6px;
   }
   ::-webkit-scrollbar {
@@ -458,5 +470,14 @@ export default {
   ::-webkit-scrollbar-button {
     background-color: $white;
   }
+}
+.ay-fade-in-enter-active,
+.ay-fade-in-leave-active {
+  transition: opacity 0.3s linear;
+}
+.ay-fade-in-enter,
+.ay-fade-in-leave-to,
+.ay-fade-in-leave-active {
+  opacity: 0;
 }
 </style>

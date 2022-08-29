@@ -11,7 +11,7 @@ import AyMenuItemGroup from "./AyMenu/menuItemGroup.vue";
 import AyNotification from "./AyNotification";
 import AyPagination from "./AyPagination/pagination.vue";
 import AyPopover from "./AyPopover/popover.vue";
-import AyProgressBar from "./AyProgressBar/progressBar";
+import AyProgress from "./AyProgress/progress";
 import AySelect from "./AySelect/select.vue";
 import AyTab from "./AyTab/tab.vue";
 import AyTabPane from "./AyTab/tabPane.vue";
@@ -31,7 +31,7 @@ export {
   AyNotification,
   AyPagination,
   AyPopover,
-  AyProgressBar,
+  AyProgress,
   AySelect,
   AyTab,
   AyTabPane,
